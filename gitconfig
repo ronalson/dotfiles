@@ -46,3 +46,6 @@
 
 [branch "master"]
   mergeoptions = --no-edit
+[user]
+	email = contact@ronalson.com.br
+	name = Ronalson
