@@ -1,0 +1,252 @@
+# ============================================================================
+# AeroSpace Configuration
+# ============================================================================
+# Docs: https://nikitabobko.github.io/AeroSpace/guide
+#
+# Workspaces:
+#   1       = AI (Claude, Codex)
+#   2, 3, 4 = Coding (Zed + Ghostty, manually placed)
+#   B       = Browser (Firefox)
+#   C       = Communication (Discord, Teams)
+#   D       = Design (Affinity, Figma)
+#   P       = Personal (Mail, Proton Mail)
+#   W       = Work (Edge)
+#
+# Modifier conventions:
+#   alt-[key]                = workspace nav, focus, layout
+#   alt-shift-[key]          = move node/window, monitor nav
+#   cmd-ctrl-alt-shift-[key] = mode switches (hyper via Karabiner)
+# ============================================================================
+
+config-version = 2
+
+# --- Startup ----------------------------------------------------------------
+start-at-login = true
+auto-reload-config = true
+after-startup-command = []
+
+# --- Normalizations ---------------------------------------------------------
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+# --- Layout Defaults --------------------------------------------------------
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'auto'
+accordion-padding = 32
+
+# --- Mouse / Focus Callbacks -----------------------------------------------
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+on-focus-changed = 'move-mouse window-lazy-center'
+
+# --- Misc -------------------------------------------------------------------
+automatically-unhide-macos-hidden-apps = false
+
+# --- Persistent Workspaces --------------------------------------------------
+persistent-workspaces = ['1', '2', '3', '4', 'B', 'C', 'D', 'P', 'W']
+
+# --- Keyboard Layout --------------------------------------------------------
+[key-mapping]
+preset = 'qwerty'
+
+# --- Gaps -------------------------------------------------------------------
+[gaps]
+inner.horizontal = 8
+inner.vertical   = 8
+outer.left       = 8
+outer.bottom     = 8
+outer.top        = 8
+outer.right      = 8
+
+# ============================================================================
+# MODE: Main
+# ============================================================================
+[mode.main.binding]
+
+# --- Disable Hide -------------------------------------------------------------------
+cmd-h = [] # Disable "hide application"
+cmd-alt-h = [] # Disable "hide others"
+
+# --- Layout -----------------------------------------------------------------
+alt-slash = 'layout tiles horizontal vertical'
+alt-comma = 'layout accordion horizontal vertical'
+
+# --- Focus (vim directions) -------------------------------------------------
+alt-h = 'focus left'
+alt-j = 'focus down'
+alt-k = 'focus up'
+alt-l = 'focus right'
+
+# --- Move Window (vim directions) -------------------------------------------
+alt-shift-h = 'move left'
+alt-shift-j = 'move down'
+alt-shift-k = 'move up'
+alt-shift-l = 'move right'
+
+# --- Fullscreen & Float -----------------------------------------------------
+alt-f = 'fullscreen'
+alt-t = 'layout floating tiling'
+
+# --- Workspace Navigation ---------------------------------------------------
+alt-1 = 'workspace 1'
+alt-2 = 'workspace 2'
+alt-3 = 'workspace 3'
+alt-4 = 'workspace 4'
+alt-b = 'workspace B'
+alt-c = 'workspace C'
+alt-d = 'workspace D'
+alt-p = 'workspace P'
+alt-w = 'workspace W'
+
+# --- Move Node to Workspace (numbered only) ---------------------------------
+alt-shift-1 = 'move-node-to-workspace 1'
+alt-shift-2 = 'move-node-to-workspace 2'
+alt-shift-3 = 'move-node-to-workspace 3'
+alt-shift-4 = 'move-node-to-workspace 4'
+
+# --- Monitor Navigation -----------------------------------------------------
+alt-shift-u = 'focus-monitor up'
+alt-shift-d = 'focus-monitor down'
+
+# --- Move Node to Monitor ---------------------------------------------------
+cmd-ctrl-alt-shift-leftSquareBracket = ['move-node-to-monitor prev', 'focus-monitor prev']
+cmd-ctrl-alt-shift-rightSquareBracket = ['move-node-to-monitor next', 'focus-monitor next']
+
+# --- Workspace Back-and-Forth -----------------------------------------------
+alt-tab = 'workspace-back-and-forth'
+
+# --- Move Workspace to Monitor ----------------------------------------------
+alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+
+# --- Mode Switches ----------------------------------------------------------
+cmd-ctrl-alt-shift-m = 'mode merge'
+cmd-ctrl-alt-shift-r = 'mode resize'
+alt-shift-semicolon = 'mode service'
+
+# ============================================================================
+# MODE: Merge
+# ============================================================================
+[mode.merge.binding]
+space = 'mode main'
+esc   = 'mode main'
+
+left  = ['join-with left', 'mode main']
+down  = ['join-with down', 'mode main']
+up    = ['join-with up', 'mode main']
+right = ['join-with right', 'mode main']
+
+# ============================================================================
+# MODE: Resize
+# ============================================================================
+[mode.resize.binding]
+space = 'mode main'
+esc   = 'mode main'
+
+# Fine adjustments (16px)
+left  = 'resize width -16'
+down  = 'resize height -16'
+up    = 'resize height +16'
+right = 'resize width +16'
+
+# Coarse adjustments (64px)
+shift-left  = 'resize width -64'
+shift-down  = 'resize height -64'
+shift-up    = 'resize height +64'
+shift-right = 'resize width +64'
+
+# Balance all windows equally
+b = 'balance-sizes'
+
+# ============================================================================
+# MODE: Service
+# ============================================================================
+[mode.service.binding]
+esc       = ['reload-config', 'mode main']
+r         = ['flatten-workspace-tree', 'mode main']
+f         = ['layout floating tiling', 'mode main']
+backspace = ['close-all-windows-but-current', 'mode main']
+
+# ============================================================================
+# APP -> WORKSPACE ASSIGNMENTS
+# ============================================================================
+
+# --- Workspace 1: AI -------------------------------------------------------
+[[on-window-detected]]
+if.app-id = 'com.anthropic.claudefordesktop'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.openai.codex'
+run = 'move-node-to-workspace 1'
+
+# --- Workspace B: Browser ---------------------------------------------------
+[[on-window-detected]]
+if.app-id = 'org.mozilla.firefoxdeveloperedition'
+run = 'move-node-to-workspace B'
+
+[[on-window-detected]]
+if.app-id = 'org.mozilla.firefox'
+run = 'move-node-to-workspace B'
+
+# --- Workspace C: Communication ---------------------------------------------
+[[on-window-detected]]
+if.app-id = 'com.hnc.Discord'
+run = 'move-node-to-workspace C'
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams2'
+run = 'move-node-to-workspace C'
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams'
+run = 'move-node-to-workspace C'
+
+# --- Workspace D: Design ----------------------------------------------------
+[[on-window-detected]]
+if.app-id = 'com.canva.affinity'
+run = 'move-node-to-workspace D'
+
+[[on-window-detected]]
+if.app-id = 'com.figma.Desktop'
+run = 'move-node-to-workspace D'
+
+# --- Workspace P: Personal --------------------------------------------------
+[[on-window-detected]]
+if.app-id = 'com.apple.mail'
+run = 'move-node-to-workspace P'
+
+[[on-window-detected]]
+if.app-id = 'ch.protonmail.desktop'
+run = 'move-node-to-workspace P'
+
+# --- Workspace W: Work ------------------------------------------------------
+[[on-window-detected]]
+if.app-id = 'com.microsoft.edgemac'
+run = 'move-node-to-workspace W'
+
+# ============================================================================
+# FLOATING RULES (utility / transient apps)
+# ============================================================================
+
+[[on-window-detected]]
+if.app-id = 'com.apple.systempreferences'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.finder'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.raycast.macos'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'org.pqrs.Karabiner-Elements.Settings'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.ActivityMonitor'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.AppStore'
+run = 'layout floating'

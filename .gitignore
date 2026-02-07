@@ -1,0 +1,61 @@
+# ===========================================================================
+# Dotfiles .gitignore
+# ===========================================================================
+
+# --- macOS -----------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# --- Editors ---------------------------------------------------------------
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# --- Secrets & credentials -------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+*secret*
+*token*
+
+# --- Shell noise -----------------------------------------------------------
+.zsh_history
+.bash_history
+.zcompdump*
+.zsh_sessions/
+
+# --- Claude secrets --------------------------------------------------------
+.claude.json
+.claude.json.bak
+.claude/debug/
+.claude/telemetry/
+.claude/session-env/
+.claude/shell-snapshots/
+.claude/todos/
+.claude/projects/
+
+# --- Karabiner noise -------------------------------------------------------
+.config/karabiner/automatic_backups/
+.config/karabiner/assets/
+
+# --- Node / JS noise -------------------------------------------------------
+node_modules/
+.npm/
+.pnpm-store/
+.bun/
+
+# --- Python noise ----------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
