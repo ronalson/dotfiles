@@ -78,10 +78,10 @@ alt-slash = 'layout tiles horizontal vertical'
 alt-comma = 'layout accordion horizontal vertical'
 
 # --- Focus (vim directions) -------------------------------------------------
-alt-h = 'focus left'
+alt-h = 'focus left --boundaries-action wrap-around-the-workspace'
 alt-j = 'focus down'
 alt-k = 'focus up'
-alt-l = 'focus right'
+alt-l = 'focus right --boundaries-action wrap-around-the-workspace'
 
 # --- Move Window (vim directions) -------------------------------------------
 alt-shift-h = 'move left'
