@@ -6,11 +6,19 @@
 # Workspaces:
 #   1       = AI (Claude, Codex)
 #   2, 3, 4 = Coding (Zed + Ghostty, manually placed)
-#   B       = Browser (Firefox)
+#   W       = Web (Firefox)
 #   C       = Communication (Discord, Teams)
 #   D       = Design (Affinity, Figma)
 #   P       = Personal (Mail, Proton Mail)
-#   W       = Work (Edge)
+#   O       = Office (Edge)
+#
+# Reserved Letters (alt / opt):
+#   HJKL    = Movements
+#   M       = Monitor (move / focus)
+#   F       = Fullscreen
+#   T       = Float
+#   N       = Next Workspace on Current Monitor
+#   B       = Previous Workspace on Current Monitor
 #
 # Modifier conventions:
 #   alt-[key]                = workspace nav, focus, layout
@@ -22,7 +30,6 @@ config-version = 2
 
 # --- Startup ----------------------------------------------------------------
 start-at-login = true
-auto-reload-config = true
 after-startup-command = []
 
 # --- Normalizations ---------------------------------------------------------
@@ -42,7 +49,7 @@ on-focus-changed = 'move-mouse window-lazy-center'
 automatically-unhide-macos-hidden-apps = false
 
 # --- Persistent Workspaces --------------------------------------------------
-persistent-workspaces = ['1', '2', '3', '4', 'B', 'C', 'D', 'P', 'W']
+persistent-workspaces = ['1', '2', '3', '4', 'W', 'C', 'D', 'P', 'O']
 
 # --- Keyboard Layout --------------------------------------------------------
 [key-mapping]
@@ -91,21 +98,30 @@ alt-1 = 'workspace 1'
 alt-2 = 'workspace 2'
 alt-3 = 'workspace 3'
 alt-4 = 'workspace 4'
-alt-b = 'workspace B'
-alt-c = 'workspace C'
-alt-d = 'workspace D'
-alt-p = 'workspace P'
 alt-w = 'workspace W'
+alt-c = 'workspace C'
+alt-p = 'workspace P'
+alt-o = 'workspace O'
+alt-d = 'workspace D'
 
-# --- Move Node to Workspace (numbered only) ---------------------------------
+# alt-m = 'focus-monitor'
+
+alt-n = 'exec-and-forget aerospace list-workspaces --monitor focused --empty no | aerospace workspace --wrap-around --stdin next'
+alt-b = 'exec-and-forget aerospace list-workspaces --monitor focused --empty no | aerospace workspace --wrap-around --stdin prev'
+
+# --- Move Node to Workspace ---------------------------------
 alt-shift-1 = 'move-node-to-workspace 1'
 alt-shift-2 = 'move-node-to-workspace 2'
 alt-shift-3 = 'move-node-to-workspace 3'
 alt-shift-4 = 'move-node-to-workspace 4'
+alt-shift-w = 'move-node-to-workspace W'
+alt-shift-c = 'move-node-to-workspace C'
+alt-shift-d = 'move-node-to-workspace D'
+alt-shift-p = 'move-node-to-workspace P'
+alt-shift-o = 'move-node-to-workspace O'
 
 # --- Monitor Navigation -----------------------------------------------------
-alt-shift-u = 'focus-monitor up'
-alt-shift-d = 'focus-monitor down'
+alt-shift-m = 'focus-monitor next'
 
 # --- Move Node to Monitor ---------------------------------------------------
 cmd-ctrl-alt-shift-leftSquareBracket = ['move-node-to-monitor prev', 'focus-monitor prev']
@@ -120,7 +136,7 @@ alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 # --- Mode Switches ----------------------------------------------------------
 cmd-ctrl-alt-shift-m = 'mode merge'
 cmd-ctrl-alt-shift-r = 'mode resize'
-alt-shift-semicolon = 'mode service'
+cmd-ctrl-alt-shift-semicolon = 'mode service'
 
 # ============================================================================
 # MODE: Merge
@@ -181,11 +197,11 @@ run = 'move-node-to-workspace 1'
 # --- Workspace B: Browser ---------------------------------------------------
 [[on-window-detected]]
 if.app-id = 'org.mozilla.firefoxdeveloperedition'
-run = 'move-node-to-workspace B'
+run = 'move-node-to-workspace W'
 
 [[on-window-detected]]
 if.app-id = 'org.mozilla.firefox'
-run = 'move-node-to-workspace B'
+run = 'move-node-to-workspace W'
 
 # --- Workspace C: Communication ---------------------------------------------
 [[on-window-detected]]
@@ -221,7 +237,7 @@ run = 'move-node-to-workspace P'
 # --- Workspace W: Work ------------------------------------------------------
 [[on-window-detected]]
 if.app-id = 'com.microsoft.edgemac'
-run = 'move-node-to-workspace W'
+run = 'move-node-to-workspace O'
 
 # ============================================================================
 # FLOATING RULES (utility / transient apps)
