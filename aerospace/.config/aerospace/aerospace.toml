@@ -106,6 +106,7 @@ alt-d = 'workspace D'
 
 # alt-m = 'focus-monitor'
 
+# Cycle workspace
 alt-n = 'exec-and-forget aerospace list-workspaces --monitor focused --empty no | aerospace workspace --wrap-around --stdin next'
 alt-b = 'exec-and-forget aerospace list-workspaces --monitor focused --empty no | aerospace workspace --wrap-around --stdin prev'
 
@@ -142,6 +143,12 @@ cmd-ctrl-alt-shift-semicolon = 'mode service'
 # MODE: Merge
 # ============================================================================
 [mode.merge.binding]
+
+# --- Disable Hide -------------------------------------------------------------------
+cmd-h = [] # Disable "hide application"
+cmd-alt-h = [] # Disable "hide others"
+
+# --- Exit mode ----------------------------------------------------------------
 space = 'mode main'
 esc   = 'mode main'
 
@@ -154,6 +161,12 @@ right = ['join-with right', 'mode main']
 # MODE: Resize
 # ============================================================================
 [mode.resize.binding]
+
+# --- Disable Hide -------------------------------------------------------------------
+cmd-h = [] # Disable "hide application"
+cmd-alt-h = [] # Disable "hide others"
+
+# --- Exit mode ----------------------------------------------------------------
 space = 'mode main'
 esc   = 'mode main'
 
@@ -176,6 +189,12 @@ b = 'balance-sizes'
 # MODE: Service
 # ============================================================================
 [mode.service.binding]
+
+# --- Disable Hide -------------------------------------------------------------------
+cmd-h = [] # Disable "hide application"
+cmd-alt-h = [] # Disable "hide others"
+
+# Service adjustments
 esc       = ['reload-config', 'mode main']
 r         = ['flatten-workspace-tree', 'mode main']
 f         = ['layout floating tiling', 'mode main']
