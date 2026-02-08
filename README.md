@@ -8,6 +8,8 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 |---------|-------------|--------|
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
 | `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping | `~/.config/karabiner/` |
+| `wezterm` | [WezTerm](https://wezfurlong.org/wezterm/) terminal emulator | `~/.wezterm.lua` |
+| `zed` | [Zed](https://zed.dev/) code editor | `~/.config/zed/` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
 | `zsh-work` | ZSH config (work machine) | `~/.zshrc` |
 
@@ -54,11 +56,15 @@ Each top-level directory is a stow package. The internal structure mirrors `$HOM
 ```
 dotfiles/
 ├── aerospace/
-│   └── .config/aerospace/aerospace.toml   → ~/.config/aerospace/aerospace.toml
+│   └── .config/aerospace/aerospace.toml     → ~/.config/aerospace/aerospace.toml
 ├── karabiner/
-│   └── .config/karabiner/karabiner.json   → ~/.config/karabiner/karabiner.json
+│   └── .config/karabiner/karabiner.json     → ~/.config/karabiner/karabiner.json
+├── wezterm/
+│   └── .wezterm.lua                         → ~/.wezterm.lua
+├── zed/
+│   └── .config/zed/{settings,keymap}.json   → ~/.config/zed/
 └── zsh-personal/
-    └── .zshrc                             → ~/.zshrc
+    └── .zshrc                               → ~/.zshrc
 ```
 
 Stow runs with `--no-folding`, creating file-level symlinks. This keeps directories like `~/.config/karabiner/` intact while only symlinking the files we version.

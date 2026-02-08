@@ -1,0 +1,40 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "vim_mode": false,
+  "languages": {
+    "Markdown": {
+      "show_edit_predictions": false
+    }
+  },
+  "telemetry": {
+    "diagnostics": true,
+    "metrics": true
+  },
+  "base_keymap": "Cursor",
+  "search": {
+    "include_ignored": false
+  },
+  "minimap": {
+    "show": "never"
+  },
+  "autosave": "off",
+  "file_types": {},
+  "auto_indent_on_paste": true,
+  "linked_edits": true,
+  "show_edit_predictions": true,
+  "tab_size": 2,
+  "ui_font_size": 16,
+  "buffer_font_size": 13.0,
+  "theme": {
+    "mode": "system",
+    "light": "Ayu Light",
+    "dark": "Ayu Dark"
+  }
+}
