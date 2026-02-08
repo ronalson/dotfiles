@@ -56,7 +56,9 @@ Each top-level directory is a stow package. The internal structure mirrors `$HOM
 ```
 dotfiles/
 ├── aerospace/
-│   └── .config/aerospace/aerospace.toml     → ~/.config/aerospace/aerospace.toml
+│   └── .config/aerospace/
+│       ├── aerospace.toml                   → ~/.config/aerospace/aerospace.toml
+│       └── toggle-split.sh                  → ~/.config/aerospace/toggle-split.sh
 ├── karabiner/
 │   └── .config/karabiner/karabiner.json     → ~/.config/karabiner/karabiner.json
 ├── wezterm/
