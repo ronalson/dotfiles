@@ -46,11 +46,6 @@ wezterm.on(
 -- Key bindings
 config.keys = {
   {
-    key = 'w',
-    mods = 'CMD',
-    action = wezterm.action.CloseCurrentPane { confirm = false },
-  },
-  {
     key = 'd',
     mods = 'CMD',
     action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' },
