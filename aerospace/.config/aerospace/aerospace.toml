@@ -286,3 +286,11 @@ run = 'layout floating'
 [[on-window-detected]]
 if.app-id = 'com.apple.AppStore'
 run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'cc.ffitch.shottr'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'me.proton.pass.electron'
+run = 'layout floating'
