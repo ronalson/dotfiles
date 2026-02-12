@@ -7,11 +7,61 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "git": {
+    "blame": {
+      "show_avatar": false
+    }
+  },
+  "tabs": {
+    "file_icons": false,
+    "git_status": false
+  },
+  "debugger": {
+    "button": true
+  },
+  "status_bar": {
+    "cursor_position_button": true
+  },
+  "project_panel": {
+    "button": true
+  },
+  "title_bar": {
+    "show_menus": false,
+    "show_project_items": true,
+    "show_branch_icon": true
+  },
+  "terminal": {
+    "button": false
+  },
+  "outline_panel": {
+    "indent_size": 12.0,
+    "default_width": 380.0,
+    "dock": "right"
+  },
+  "notification_panel": {
+    "button": false
+  },
+  "collaboration_panel": {
+    "button": false
+  },
+  "git_panel": {
+    "default_width": 380.0,
+    "dock": "right",
+    "tree_view": false
+  },
   "vim_mode": false,
   "languages": {
     "Markdown": {
-      "show_edit_predictions": false
-    }
+      "show_edit_predictions": false,
+    },
+    "JavaScript": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true,
+      },
+      "prettier": {
+        "allowed": false,
+      },
+    },
   },
   "telemetry": {
     "diagnostics": true,
@@ -19,10 +69,10 @@
   },
   "base_keymap": "Cursor",
   "search": {
-    "include_ignored": false
+    "include_ignored": false,
   },
   "minimap": {
-    "show": "never"
+    "show": "never",
   },
   "autosave": "off",
   "file_types": {},
@@ -35,6 +85,6 @@
   "theme": {
     "mode": "system",
     "light": "Ayu Light",
-    "dark": "Ayu Dark"
-  }
+    "dark": "Ayu Dark",
+  },
 }
