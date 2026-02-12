@@ -171,17 +171,17 @@ cmd-alt-h = [] # Disable "hide others"
 space = 'mode main'
 esc   = 'mode main'
 
-# Fine adjustments (16px)
-left  = 'resize width -16'
-down  = 'resize height -16'
-up    = 'resize height +16'
-right = 'resize width +16'
+# Fine adjustments (48px)
+left  = 'resize width -48'
+down  = 'resize height -48'
+up    = 'resize height +48'
+right = 'resize width +48'
 
-# Coarse adjustments (64px)
-shift-left  = 'resize width -64'
-shift-down  = 'resize height -64'
-shift-up    = 'resize height +64'
-shift-right = 'resize width +64'
+# Coarse adjustments (96px)
+shift-left  = 'resize width -96'
+shift-down  = 'resize height -96'
+shift-up    = 'resize height +96'
+shift-right = 'resize width +96'
 
 # Balance all windows equally
 b = 'balance-sizes'
