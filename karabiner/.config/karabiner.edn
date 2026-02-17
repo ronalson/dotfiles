@@ -1,0 +1,25 @@
+;; ~/.config/karabiner.edn
+
+{:profiles {:Default {:default true
+                      :sim     100
+                      :delay   500
+                      :alone   1000
+                      :held    500}}
+
+ :main [{:des "Caps Lock -> Hyper when held, Escape when tapped"
+         :rules [[:##caps_lock :!CTOleft_shift nil {:alone :escape}]]}
+
+        {:des "Hyper Arrows (vim-style)"
+         :rules [[:!!h :left_arrow]
+                 [:!!j :down_arrow]
+                 [:!!k :up_arrow]
+                 [:!!l :right_arrow]]}
+
+        {:des "Hyper + Equal -> Fn+F12"
+         :rules [[:!!equal_sign :!Ff12]]}
+
+        {:des "f+d → Left Option"
+         :rules [[[:f :d] :left_option nil {:alone [:d :f]}]]}
+
+        {:des "j+k → Right Option"
+         :rules [[[:j :k] :right_option nil {:alone [:k :j]}]]}]}

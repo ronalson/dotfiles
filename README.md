@@ -7,7 +7,7 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | Package | Description | Target |
 |---------|-------------|--------|
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
-| `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping | `~/.config/karabiner/` |
+| `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping via [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) | `~/.config/karabiner/` |
 | `wezterm` | [WezTerm](https://wezfurlong.org/wezterm/) terminal emulator | `~/.wezterm.lua` |
 | `zed` | [Zed](https://zed.dev/) code editor | `~/.config/zed/` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
@@ -60,7 +60,9 @@ dotfiles/
 │       ├── aerospace.toml                   → ~/.config/aerospace/aerospace.toml
 │       └── toggle-split.sh                  → ~/.config/aerospace/toggle-split.sh
 ├── karabiner/
-│   └── .config/karabiner/karabiner.json     → ~/.config/karabiner/karabiner.json
+│   └── .config/
+│       ├── karabiner.edn                    → ~/.config/karabiner.edn (GokuRakuJo source)
+│       └── karabiner/karabiner.json         → ~/.config/karabiner/karabiner.json
 ├── wezterm/
 │   └── .wezterm.lua                         → ~/.wezterm.lua
 ├── zed/
@@ -86,6 +88,31 @@ stow --no-folding --adopt --target=$HOME new-package
 # 4. Commit
 git add new-package/ && git commit -m "Add new-package config"
 ```
+
+## Karabiner key mappings
+
+The `karabiner.edn` file is the [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) source. Running `goku` compiles it into `karabiner.json`. Karabiner also rewrites its JSON on every UI settings change — since the file is symlinked, changes appear directly in the repo.
+
+| Trigger | Action |
+|---------|--------|
+| Caps Lock (held) | Activates hyper-mode layer |
+| Caps Lock (tap) | Escape |
+| Hyper + `h` `j` `k` `l` | Arrow keys (vim-style) |
+| Hyper + `=` | Fn+F12 |
+
+**Home-row mods** (simultaneous key combos, bilateral):
+
+| Left hand | Right hand | Modifier |
+|-----------|------------|----------|
+| `f+d` | `j+k` | Command |
+| `f+s` | `j+l` | Option |
+| `f+a` | `j+;` | Control |
+| `f+d+s` | `j+k+l` | Cmd+Opt |
+| `f+d+a` | `j+k+;` | Cmd+Ctrl |
+| `f+s+a` | `j+l+;` | Opt+Ctrl |
+| `f+d+s+a` | `j+k+l+;` | Cmd+Opt+Ctrl |
+
+All simultaneous combos type the original characters if released without pressing another key.
 
 ## ZSH profiles
 

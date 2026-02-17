@@ -1,32 +1,537 @@
 {
-  "profiles": [
-    {
-      "complex_modifications": {
-        "rules": [
-          {
-            "description": "Caps Lock to Hyper or Esc (If Alone)",
-            "manipulators": [
-              {
-                "from": {
-                  "key_code": "caps_lock",
-                  "modifiers": { "optional": ["any"] }
-                },
-                "to": [
-                  {
-                    "key_code": "left_shift",
-                    "modifiers": ["left_command", "left_control", "left_option"]
-                  }
-                ],
-                "to_if_alone": [{ "key_code": "escape" }],
-                "type": "basic"
-              }
-            ]
-          }
-        ]
+  "profiles" : [ {
+    "complex_modifications" : {
+      "parameters" : {
+        "basic.simultaneous_threshold_milliseconds" : 80,
+        "basic.to_delayed_action_delay_milliseconds" : 500,
+        "basic.to_if_alone_timeout_milliseconds" : 1000,
+        "basic.to_if_held_down_threshold_milliseconds" : 500
       },
-      "name": "Default profile",
-      "selected": true,
-      "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
+      "rules" : [ {
+        "description" : "Auto generated layer conditions",
+        "manipulators" : [ {
+          "type" : "basic",
+          "to" : [ {
+            "set_variable" : {
+              "name" : "hyper-mode",
+              "value" : 1
+            }
+          } ],
+          "from" : {
+            "key_code" : "caps_lock"
+          },
+          "to_after_key_up" : [ {
+            "set_variable" : {
+              "name" : "hyper-mode",
+              "value" : 0
+            }
+          } ],
+          "to_if_alone" : [ {
+            "key_code" : "escape"
+          } ]
+        } ]
+      }, {
+        "description" : "Hyper Arrows (vim-style)",
+        "manipulators" : [ {
+          "from" : {
+            "key_code" : "h"
+          },
+          "to" : [ {
+            "key_code" : "left_arrow"
+          } ],
+          "conditions" : [ {
+            "name" : "hyper-mode",
+            "value" : 1,
+            "type" : "variable_if"
+          } ],
+          "type" : "basic"
+        }, {
+          "from" : {
+            "key_code" : "j"
+          },
+          "to" : [ {
+            "key_code" : "down_arrow"
+          } ],
+          "conditions" : [ {
+            "name" : "hyper-mode",
+            "value" : 1,
+            "type" : "variable_if"
+          } ],
+          "type" : "basic"
+        }, {
+          "from" : {
+            "key_code" : "k"
+          },
+          "to" : [ {
+            "key_code" : "up_arrow"
+          } ],
+          "conditions" : [ {
+            "name" : "hyper-mode",
+            "value" : 1,
+            "type" : "variable_if"
+          } ],
+          "type" : "basic"
+        }, {
+          "from" : {
+            "key_code" : "l"
+          },
+          "to" : [ {
+            "key_code" : "right_arrow"
+          } ],
+          "conditions" : [ {
+            "name" : "hyper-mode",
+            "value" : 1,
+            "type" : "variable_if"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Hyper + Equal → Fn+F12",
+        "manipulators" : [ {
+          "from" : {
+            "key_code" : "equal_sign"
+          },
+          "to" : [ {
+            "key_code" : "f12",
+            "modifiers" : [ "fn" ]
+          } ],
+          "conditions" : [ {
+            "name" : "hyper-mode",
+            "value" : 1,
+            "type" : "variable_if"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Left: f+d+s+a → Cmd+Opt+Ctrl",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "a"
+          }, {
+            "key_code" : "s"
+          }, {
+            "key_code" : "d"
+          }, {
+            "key_code" : "f"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "f"
+            }, {
+              "key_code" : "d"
+            }, {
+              "key_code" : "s"
+            }, {
+              "key_code" : "a"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "left_command"
+          }, {
+            "key_code" : "left_option"
+          }, {
+            "key_code" : "left_control"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Left: f+d+s → Cmd+Opt",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "s"
+          }, {
+            "key_code" : "d"
+          }, {
+            "key_code" : "f"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "f"
+            }, {
+              "key_code" : "d"
+            }, {
+              "key_code" : "s"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "left_command"
+          }, {
+            "key_code" : "left_option"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Left: f+d+a → Cmd+Ctrl",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "a"
+          }, {
+            "key_code" : "d"
+          }, {
+            "key_code" : "f"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "f"
+            }, {
+              "key_code" : "d"
+            }, {
+              "key_code" : "a"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "left_command"
+          }, {
+            "key_code" : "left_control"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Left: f+s+a → Opt+Ctrl",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "a"
+          }, {
+            "key_code" : "s"
+          }, {
+            "key_code" : "f"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "f"
+            }, {
+              "key_code" : "s"
+            }, {
+              "key_code" : "a"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "left_option"
+          }, {
+            "key_code" : "left_control"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Left: f+d → Command",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "d"
+          }, {
+            "key_code" : "f"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "f"
+            }, {
+              "key_code" : "d"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "left_command"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Left: f+s → Option",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "s"
+          }, {
+            "key_code" : "f"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "f"
+            }, {
+              "key_code" : "s"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "left_option"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Left: f+a → Control",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "a"
+          }, {
+            "key_code" : "f"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "f"
+            }, {
+              "key_code" : "a"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "left_control"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Right: j+k+l+; → Cmd+Opt+Ctrl",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "semicolon"
+          }, {
+            "key_code" : "l"
+          }, {
+            "key_code" : "k"
+          }, {
+            "key_code" : "j"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "j"
+            }, {
+              "key_code" : "k"
+            }, {
+              "key_code" : "l"
+            }, {
+              "key_code" : "semicolon"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "right_command"
+          }, {
+            "key_code" : "right_option"
+          }, {
+            "key_code" : "right_control"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Right: j+k+l → Cmd+Opt",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "l"
+          }, {
+            "key_code" : "k"
+          }, {
+            "key_code" : "j"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "j"
+            }, {
+              "key_code" : "k"
+            }, {
+              "key_code" : "l"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "right_command"
+          }, {
+            "key_code" : "right_option"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Right: j+k+; → Cmd+Ctrl",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "semicolon"
+          }, {
+            "key_code" : "k"
+          }, {
+            "key_code" : "j"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "j"
+            }, {
+              "key_code" : "k"
+            }, {
+              "key_code" : "semicolon"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "right_command"
+          }, {
+            "key_code" : "right_control"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Right: j+l+; → Opt+Ctrl",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "semicolon"
+          }, {
+            "key_code" : "l"
+          }, {
+            "key_code" : "j"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "j"
+            }, {
+              "key_code" : "l"
+            }, {
+              "key_code" : "semicolon"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "right_option"
+          }, {
+            "key_code" : "right_control"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Right: j+k → Command",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "k"
+          }, {
+            "key_code" : "j"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "j"
+            }, {
+              "key_code" : "k"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "right_command"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Right: j+l → Option",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "l"
+          }, {
+            "key_code" : "j"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "j"
+            }, {
+              "key_code" : "l"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "right_option"
+          } ],
+          "type" : "basic"
+        } ]
+      }, {
+        "description" : "Right: j+; → Control",
+        "manipulators" : [ {
+          "to_if_alone" : [ {
+            "key_code" : "semicolon"
+          }, {
+            "key_code" : "j"
+          } ],
+          "from" : {
+            "simultaneous" : [ {
+              "key_code" : "j"
+            }, {
+              "key_code" : "semicolon"
+            } ],
+            "simultaneous_options" : {
+              "detect_key_down_uninterruptedly" : false,
+              "key_down_order" : "insensitive",
+              "key_up_order" : "insensitive",
+              "key_up_when" : "any"
+            }
+          },
+          "to" : [ {
+            "key_code" : "right_control"
+          } ],
+          "type" : "basic"
+        } ]
+      } ]
+    },
+    "name" : "Default",
+    "selected" : true,
+    "virtual_hid_keyboard" : {
+      "keyboard_type_v2" : "ansi"
     }
-  ]
+  } ]
 }
