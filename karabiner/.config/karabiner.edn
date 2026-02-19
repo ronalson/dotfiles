@@ -1,10 +1,10 @@
 ;; ~/.config/karabiner.edn
 
 {:profiles {:Default {:default true
-                      :sim     100
-                      :delay   500
-                      :alone   1000
-                      :held    500}}
+                      :sim     35
+                      :delay   0
+                      :alone   300
+                      :held    260}}
 
  :main [{:des "Caps Lock -> Hyper when held, Escape when tapped"
          :rules [[:##caps_lock :!CTOleft_shift nil {:alone :escape}]]}
@@ -18,8 +18,39 @@
         {:des "Hyper + Equal -> Fn+F12"
          :rules [[:!!equal_sign :!Ff12]]}
 
-        {:des "f+d → Left Option"
-         :rules [[[:f :d] :left_option nil {:alone [:d :f]}]]}
+        {:des "Home Row Chords - Minimal"
+         :rules [{:type :basic
+                  :from {:simultaneous [{:key_code :f} {:key_code :d}]
+                         :simultaneous_options {:detect_key_down_uninterruptedly false
+                                                :key_down_order :insensitive
+                                                :key_up_order :insensitive
+                                                :key_up_when :all}}
+                  :to [{:key_code :left_option}]
+                  :to_if_alone [{:key_code :f} {:key_code :d}]}
 
-        {:des "j+k → Right Option"
-         :rules [[[:j :k] :right_option nil {:alone [:k :j]}]]}]}
+                 {:type :basic
+                  :from {:simultaneous [{:key_code :f} {:key_code :s}]
+                         :simultaneous_options {:detect_key_down_uninterruptedly false
+                                                :key_down_order :insensitive
+                                                :key_up_order :insensitive
+                                                :key_up_when :all}}
+                  :to [{:key_code :left_option} {:key_code :left_shift}]
+                  :to_if_alone [{:key_code :f} {:key_code :s}]}
+
+                 {:type :basic
+                  :from {:simultaneous [{:key_code :j} {:key_code :k}]
+                         :simultaneous_options {:detect_key_down_uninterruptedly false
+                                                :key_down_order :insensitive
+                                                :key_up_order :insensitive
+                                                :key_up_when :all}}
+                  :to [{:key_code :right_option}]
+                  :to_if_alone [{:key_code :j} {:key_code :k}]}
+
+                 {:type :basic
+                  :from {:simultaneous [{:key_code :j} {:key_code :l}]
+                         :simultaneous_options {:detect_key_down_uninterruptedly false
+                                                :key_down_order :insensitive
+                                                :key_up_order :insensitive
+                                                :key_up_when :all}}
+                  :to [{:key_code :right_option} {:key_code :right_shift}]
+                  :to_if_alone [{:key_code :j} {:key_code :l}]}]}]}

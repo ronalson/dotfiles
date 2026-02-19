@@ -100,19 +100,17 @@ The `karabiner.edn` file is the [GokuRakuJo](https://github.com/yqrashawn/GokuRa
 | Hyper + `h` `j` `k` `l` | Arrow keys (vim-style) |
 | Hyper + `=` | Fn+F12 |
 
-**Home-row mods** (simultaneous key combos, bilateral):
+**Home-row chords** (minimal, typing-safe):
 
 | Left hand | Right hand | Modifier |
 |-----------|------------|----------|
-| `f+d` | `j+k` | Command |
-| `f+s` | `j+l` | Option |
-| `f+a` | `j+;` | Control |
-| `f+d+s` | `j+k+l` | Cmd+Opt |
-| `f+d+a` | `j+k+;` | Cmd+Ctrl |
-| `f+s+a` | `j+l+;` | Opt+Ctrl |
-| `f+d+s+a` | `j+k+l+;` | Cmd+Opt+Ctrl |
+| `f+d` | `j+k` | Option |
+| `f+s` | `j+l` | Option+Shift |
 
-All simultaneous combos type the original characters if released without pressing another key.
+Notes:
+- Single-key home-row mod-tap mappings were removed due repeat/drop issues under fast rolling typing in Karabiner.
+- These are explicit simultaneous chords only; normal home-row letters remain untouched.
+- Chords send original letters if chorded keys are released without being used as modifiers.
 
 ## ZSH profiles
 
