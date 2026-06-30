@@ -7,6 +7,30 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "lsp": {
+    "vtsls": {
+      "settings": {
+        "typescript": {
+          "updateImportsOnFileMove": {
+            "enabled": "always"
+          }
+        },
+        "javascript": {
+          "updateImportsOnFileMove": {
+            "enabled": "always"
+          }
+        }
+      },
+      "enable_lsp_tasks": true
+    }
+  },
+  "cli_default_open_behavior": "new_window",
+  "agent_servers": {
+    "cursor": {
+      "type": "registry"
+    }
+  },
+  "disable_ai": false,
   "git": {
     "blame": {
       "show_avatar": false
@@ -58,8 +82,11 @@
       "code_actions_on_format": {
         "source.fixAll.eslint": true,
       },
-      "prettier": {
-        "allowed": false,
+      "formatter": {
+        "external": {
+          "command": "prettier",
+          "arguments": ["--stdin-filepath", "{buffer_path"],
+        },
       },
     },
   },
