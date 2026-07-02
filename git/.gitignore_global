@@ -1,0 +1,4 @@
+.bare
+.secrets
+
+**/.claude/settings.local.json

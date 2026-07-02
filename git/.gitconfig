@@ -1,0 +1,15 @@
+# Machine-specific settings (user identity, work-only includes) live in
+# ~/.gitconfig.local — untracked, created by hand. See MIGRATION.md.
+[include]
+    path = ~/.gitconfig.local
+[core]
+	editor = zed --wait
+	excludesfile = ~/.gitignore_global
+[diff]
+	tool = zed
+[merge]
+	tool = zed
+[difftool "zed"]
+	cmd = zed --wait --diff $LOCAL $REMOTE
+[mergetool "zed"]
+	cmd = zed --wait $MERGED

@@ -66,7 +66,7 @@ else
         pkg="$(basename "$dir")"
         # Skip non-package directories
         case "$pkg" in
-            docs) continue ;;
+            docs|macos) continue ;;
         esac
         PACKAGES+=("$pkg")
     done

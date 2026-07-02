@@ -7,13 +7,32 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | Package | Description | Target |
 |---------|-------------|--------|
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
+| `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
 | `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping via [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) | `~/.config/karabiner/` |
-| `wezterm` | [WezTerm](https://wezfurlong.org/wezterm/) terminal emulator | `~/.wezterm.lua` |
+| `rio` | [Rio](https://rioterm.com/) terminal emulator | `~/.config/rio/` |
+| `wezterm` | [WezTerm](https://wezfurlong.org/wezterm/) terminal emulator (legacy, replaced by Rio) | `~/.wezterm.lua` |
 | `zed` | [Zed](https://zed.dev/) code editor | `~/.config/zed/` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
 | `zsh-work` | ZSH config (work machine) | `~/.zshrc` |
 
-## Prerequisites
+Beyond stow packages, the repo also carries:
+
+- `Brewfile` — every CLI tool, app, font, go/uv tool (`brew bundle`)
+- `macos/` — system preferences (`defaults.sh`) and Dock layout (`dock.sh`)
+- `bootstrap.sh` — one-shot new-machine setup
+- `MIGRATION.md` — manual checklist for what automation can't cover (keys, auth, licenses)
+
+## New machine setup
+
+```bash
+git clone https://github.com/ronalson/dotfiles ~/Code/dotfiles
+cd ~/Code/dotfiles
+./bootstrap.sh   # Homebrew → Brewfile → stow (work profile) → oh-my-zsh → Node → macOS defaults
+```
+
+Then follow [MIGRATION.md](MIGRATION.md) for the manual steps.
+
+## Prerequisites (stow-only setup)
 
 - [Homebrew](https://brew.sh/)
 - [GNU Stow](https://formulae.brew.sh/formula/stow) (`brew install stow`)
