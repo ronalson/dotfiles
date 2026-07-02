@@ -32,8 +32,10 @@ the Dock layout.
       email = <email>
 
   ; optional — chronogit aliases; requires cloning repo.
+  ; use an ABSOLUTE path: the aliases locate their scripts via
+  ; `dirname $(git config --get include.path)`, which doesn't expand `~`
   ;[include]
-  ;    path = ~/Code/<repo_path>/.gitconfig
+  ;    path = /Users/<user>/Code/<repo_path>/.gitconfig
   ```
 - [ ] Sign in: Docker Desktop, Claude, Cursor, Figma, Postman
 
