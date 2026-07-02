@@ -17,7 +17,9 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 
 Beyond stow packages, the repo also carries:
 
-- `Brewfile` — every CLI tool, app, font, go/uv tool (`brew bundle`)
+- `Brewfile` — every CLI tool, app, font (`brew bundle`)
+- `Brewfile.work` — work-only extras (Rider, DBeaver); applied by `bootstrap.sh`,
+  skip on personal machines
 - `macos/` — system preferences (`defaults.sh`) and Dock layout (`dock.sh`)
 - `bootstrap.sh` — one-shot new-machine setup
 - `MIGRATION.md` — manual checklist for what automation can't cover (keys, auth, licenses)

@@ -1,0 +1,8 @@
+# Brewfile.work — work-machine-only additions, applied by bootstrap.sh after
+# the main Brewfile: brew bundle --file=Brewfile.work
+# (Rosetta 2 is not a cask — bootstrap.sh installs it via softwareupdate.)
+
+cask_args adopt: true
+
+cask "dbeaver-community"
+cask "rider"

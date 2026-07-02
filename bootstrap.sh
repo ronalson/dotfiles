@@ -23,15 +23,24 @@ if ! command -v brew &>/dev/null; then
 fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-# --- 2. Packages & apps --------------------------------------------------------
+# --- 2. Rosetta 2 (needed by some work x86 tools) --------------------------------
+if [[ "$(uname -m)" == "arm64" ]] && ! /usr/bin/pgrep -q oahd; then
+    info "Installing Rosetta 2..."
+    softwareupdate --install-rosetta --agree-to-license
+fi
+
+# --- 3. Packages & apps --------------------------------------------------------
 info "Installing Brewfile packages..."
 brew bundle --file="$DOTFILES_DIR/Brewfile"
 
-# --- 3. Dotfiles (work set: zsh-work, no wezterm) ------------------------------
+info "Installing work-only packages (Brewfile.work)..."
+brew bundle --file="$DOTFILES_DIR/Brewfile.work"
+
+# --- 4. Dotfiles (work set: zsh-work, no wezterm) ------------------------------
 info "Stowing dotfiles..."
 "$DOTFILES_DIR/install.sh" aerospace git karabiner rio zed zsh-work
 
-# --- 4. oh-my-zsh + custom plugins ---------------------------------------------
+# --- 5. oh-my-zsh + custom plugins ---------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     info "Installing oh-my-zsh..."
     RUNZSH=no KEEP_ZSHRC=yes sh -c \
@@ -46,13 +55,13 @@ for plugin in zsh-autosuggestions zsh-syntax-highlighting zsh-completions; do
     fi
 done
 
-# --- 5. Node (fnm) ----------------------------------------------------------------
+# --- 6. Node (fnm) ----------------------------------------------------------------
 info "Installing Node via fnm..."
 eval "$(fnm env)"
 fnm install --lts
 fnm default lts-latest
 
-# --- 6. macOS preferences + Dock --------------------------------------------------
+# --- 7. macOS preferences + Dock --------------------------------------------------
 info "Applying macOS defaults..."
 "$DOTFILES_DIR/macos/defaults.sh"
 "$DOTFILES_DIR/macos/dock.sh"
