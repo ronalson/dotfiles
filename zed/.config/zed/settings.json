@@ -12,66 +12,64 @@
       "settings": {
         "typescript": {
           "updateImportsOnFileMove": {
-            "enabled": "always"
-          }
+            "enabled": "always",
+          },
         },
         "javascript": {
           "updateImportsOnFileMove": {
-            "enabled": "always"
-          }
-        }
+            "enabled": "always",
+          },
+        },
       },
-      "enable_lsp_tasks": true
-    }
+      "enable_lsp_tasks": true,
+    },
   },
   "cli_default_open_behavior": "new_window",
   "agent_servers": {
     "cursor": {
-      "type": "registry"
-    }
+      "type": "registry",
+    },
   },
   "disable_ai": false,
   "git": {
     "blame": {
-      "show_avatar": false
-    }
+      "show_avatar": false,
+    },
   },
   "tabs": {
     "file_icons": false,
-    "git_status": false
+    "git_status": false,
   },
   "debugger": {
-    "button": true
+    "button": true,
   },
   "status_bar": {
-    "cursor_position_button": true
+    "cursor_position_button": true,
   },
   "project_panel": {
-    "button": true
+    "dock": "left",
+    "button": true,
   },
   "title_bar": {
     "show_menus": false,
     "show_project_items": true,
-    "show_branch_icon": true
   },
   "terminal": {
-    "button": false
+    "button": false,
   },
   "outline_panel": {
     "indent_size": 12.0,
     "default_width": 380.0,
-    "dock": "right"
-  },
-  "notification_panel": {
-    "button": false
+    "dock": "right",
   },
   "collaboration_panel": {
-    "button": false
+    "dock": "left",
+    "button": false,
   },
   "git_panel": {
     "default_width": 380.0,
     "dock": "right",
-    "tree_view": false
+    "tree_view": false,
   },
   "vim_mode": false,
   "languages": {
@@ -90,9 +88,11 @@
       },
     },
   },
-  "telemetry": {
-    "diagnostics": true,
-    "metrics": true
+  "agent": {
+    "sidebar_side": "right",
+    "dock": "right",
+    "button": true,
+    "model_parameters": [],
   },
   "base_keymap": "Cursor",
   "search": {
