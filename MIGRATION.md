@@ -6,7 +6,7 @@
 # 1. Sign into iCloud, let MDM enrollment finish (Teams/Office/Defender arrive by themselves)
 # 2. Then:
 git clone https://github.com/ronalson/dotfiles ~/Code/dotfiles
-cd ~/Code/dotfiles && ./bootstrap.sh
+cd ~/Code/dotfiles && ./bootstrap.sh work   # or: personal
 ```
 
 `bootstrap.sh` handles: Homebrew + all apps/CLIs (Brewfile), dotfile symlinks

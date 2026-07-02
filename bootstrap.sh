@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # ===========================================================================
-# New Machine Bootstrap (work profile)
+# New Machine Bootstrap
 # ===========================================================================
 # One-shot setup for a fresh macOS machine. Idempotent — safe to re-run.
 #
 #   git clone https://github.com/ronalson/dotfiles ~/Code/dotfiles
-#   cd ~/Code/dotfiles && ./bootstrap.sh
+#   cd ~/Code/dotfiles && ./bootstrap.sh <work|personal>
+#
+# work:     Brewfile + Brewfile.work (Rider, DBeaver) + Rosetta 2 + zsh-work
+# personal: Brewfile only + zsh-personal
 #
 # Manual steps (auth, keys, licenses) are listed in MIGRATION.md.
 # ===========================================================================
@@ -16,6 +19,14 @@ DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 info() { printf "\n\033[1;34m==> %s\033[0m\n" "$1"; }
 
+# --- Profile ------------------------------------------------------------------
+PROFILE="${1:-}"
+if [[ "$PROFILE" != "work" && "$PROFILE" != "personal" ]]; then
+    echo "Usage: ./bootstrap.sh <work|personal>"
+    exit 1
+fi
+info "Bootstrapping with the '$PROFILE' profile"
+
 # --- 1. Homebrew -------------------------------------------------------------
 if ! command -v brew &>/dev/null; then
     info "Installing Homebrew..."
@@ -24,7 +35,7 @@ fi
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # --- 2. Rosetta 2 (needed by some work x86 tools) --------------------------------
-if [[ "$(uname -m)" == "arm64" ]] && ! /usr/bin/pgrep -q oahd; then
+if [[ "$PROFILE" == "work" && "$(uname -m)" == "arm64" ]] && ! /usr/bin/pgrep -q oahd; then
     info "Installing Rosetta 2..."
     softwareupdate --install-rosetta --agree-to-license
 fi
@@ -33,12 +44,14 @@ fi
 info "Installing Brewfile packages..."
 brew bundle --file="$DOTFILES_DIR/Brewfile"
 
-info "Installing work-only packages (Brewfile.work)..."
-brew bundle --file="$DOTFILES_DIR/Brewfile.work"
+if [[ "$PROFILE" == "work" ]]; then
+    info "Installing work-only packages (Brewfile.work)..."
+    brew bundle --file="$DOTFILES_DIR/Brewfile.work"
+fi
 
-# --- 4. Dotfiles (work set: zsh-work, no wezterm) ------------------------------
+# --- 4. Dotfiles (zsh profile matches machine; no wezterm) ----------------------
 info "Stowing dotfiles..."
-"$DOTFILES_DIR/install.sh" aerospace git karabiner rio zed zsh-work
+"$DOTFILES_DIR/install.sh" aerospace git karabiner rio zed "zsh-$PROFILE"
 
 # --- 5. oh-my-zsh + custom plugins ---------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then

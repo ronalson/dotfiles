@@ -18,8 +18,8 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 Beyond stow packages, the repo also carries:
 
 - `Brewfile` — every CLI tool, app, font (`brew bundle`)
-- `Brewfile.work` — work-only extras (Rider, DBeaver); applied by `bootstrap.sh`,
-  skip on personal machines
+- `Brewfile.work` — work-only extras (Rider, DBeaver); applied only by
+  `./bootstrap.sh work`
 - `macos/` — system preferences (`defaults.sh`) and Dock layout (`dock.sh`)
 - `bootstrap.sh` — one-shot new-machine setup
 - `MIGRATION.md` — manual checklist for what automation can't cover (keys, auth, licenses)
@@ -29,8 +29,12 @@ Beyond stow packages, the repo also carries:
 ```bash
 git clone https://github.com/ronalson/dotfiles ~/Code/dotfiles
 cd ~/Code/dotfiles
-./bootstrap.sh   # Homebrew → Brewfile → stow (work profile) → oh-my-zsh → Node → macOS defaults
+./bootstrap.sh work       # or: ./bootstrap.sh personal
 ```
+
+Both profiles run: Homebrew → Brewfile → stow → oh-my-zsh → Node (fnm) → macOS
+defaults + Dock. The `work` profile additionally installs Rosetta 2 and
+`Brewfile.work`, and stows `zsh-work` instead of `zsh-personal`.
 
 Then follow [MIGRATION.md](MIGRATION.md) for the manual steps.
 
