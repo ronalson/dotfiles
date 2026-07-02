@@ -21,6 +21,12 @@ defaults write com.apple.dock show-recents -bool false
 defaults write -g KeyRepeat -int 5
 defaults write -g InitialKeyRepeat -int 25
 
+# --- Scroll & pointer -----------------------------------------------------------
+# Disable "natural" scrolling
+defaults write -g com.apple.swipescrolldirection -bool false
+# Mouse tracking speed
+defaults write -g com.apple.mouse.scaling -float 2
+
 killall Dock 2>/dev/null || true
 
 echo "Done. Some settings need logout/restart to take effect."
