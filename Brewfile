@@ -1,6 +1,11 @@
 # Brewfile — declarative package manifest, applied with `brew bundle`
 # (bootstrap.sh runs this automatically on a new machine)
 
+# Adopt apps that already exist in /Applications (e.g. installed manually or
+# copied by Migration Assistant) instead of failing. If a version mismatch
+# still fails one, use: brew install --cask --force <name>
+cask_args adopt: true
+
 tap "atlassian/acli", trusted: true
 tap "docker/tap", trusted: true
 tap "nikitabobko/tap"
