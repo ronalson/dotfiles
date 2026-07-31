@@ -21,7 +21,7 @@ APPS=(
     "/Applications/Microsoft Edge.app"
     "/Applications/Google Chrome.app"
     "/Applications/Claude.app"
-    "/Applications/Rio.app"
+    "/Applications/Ghostty.app"
     "/Applications/Cursor.app"
     "/Applications/Zed.app"
     "/Applications/Postman.app"

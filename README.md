@@ -8,9 +8,8 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 |---------|-------------|--------|
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
 | `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
+| `ghostty` | [Ghostty](https://ghostty.org/) terminal emulator | `~/.config/ghostty/` |
 | `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping via [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) | `~/.config/karabiner/` |
-| `rio` | [Rio](https://rioterm.com/) terminal emulator | `~/.config/rio/` |
-| `wezterm` | [WezTerm](https://wezfurlong.org/wezterm/) terminal emulator (legacy, replaced by Rio) | `~/.wezterm.lua` |
 | `zed` | [Zed](https://zed.dev/) code editor | `~/.config/zed/` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
 | `zsh-work` | ZSH config (work machine) | `~/.zshrc` |
@@ -88,8 +87,8 @@ dotfiles/
 │   └── .config/
 │       ├── karabiner.edn                    → ~/.config/karabiner.edn (GokuRakuJo source)
 │       └── karabiner/karabiner.json         → ~/.config/karabiner/karabiner.json
-├── wezterm/
-│   └── .wezterm.lua                         → ~/.wezterm.lua
+├── ghostty/
+│   └── .config/ghostty/config.ghostty       → ~/.config/ghostty/config.ghostty
 ├── zed/
 │   └── .config/zed/{settings,keymap}.json   → ~/.config/zed/
 └── zsh-personal/

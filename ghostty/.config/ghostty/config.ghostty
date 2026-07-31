@@ -1,0 +1,4 @@
+# See the full configuration reference: https://ghostty.org/docs/config
+
+theme = Ayu
+font-size = 14
