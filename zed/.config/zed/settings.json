@@ -24,13 +24,16 @@
       "enable_lsp_tasks": true,
     },
   },
-  "cli_default_open_behavior": "new_window",
   "agent_servers": {
     "cursor": {
       "type": "registry",
     },
   },
   "disable_ai": false,
+  "edit_predictions": {
+    "provider": "zed",
+  },
+  "cli_default_open_behavior": "new_window",
   "git": {
     "blame": {
       "show_avatar": false,
@@ -51,6 +54,7 @@
     "button": true,
   },
   "title_bar": {
+    "show_branch_status_icon": true,
     "show_menus": false,
     "show_project_items": true,
   },
@@ -94,6 +98,10 @@
     "button": true,
     "model_parameters": [],
   },
+  "telemetry": {
+    "diagnostics": true,
+    "metrics": true,
+  },
   "base_keymap": "Cursor",
   "search": {
     "include_ignored": false,
@@ -105,7 +113,7 @@
   "file_types": {},
   "auto_indent_on_paste": true,
   "linked_edits": true,
-  "show_edit_predictions": true,
+  "show_edit_predictions": false,
   "tab_size": 2,
   "ui_font_size": 16,
   "buffer_font_size": 13.0,
