@@ -4,7 +4,7 @@
 # Docs: https://nikitabobko.github.io/AeroSpace/guide
 #
 # Workspaces:
-#   1       = AI (Claude, Codex)
+#   1       = AI (Claude, Codex, T3 Code)
 #   2, 3, 4 = Coding (Zed + Ghostty, manually placed)
 #   W       = Web (Firefox)
 #   C       = Communication (Discord, Teams)
@@ -294,3 +294,14 @@ run = 'layout floating'
 [[on-window-detected]]
 if.app-id = 'me.proton.pass.electron'
 run = 'layout floating'
+
+# ============================================================================
+# TILLING RULES
+# ============================================================================
+#
+# FIX: https://ghostty.org/docs/help/macos-tiling-wms#workarounds
+[[on-window-detected]]
+if.app-id="com.mitchellh.ghostty"
+run= [
+  "layout tiling",
+]
