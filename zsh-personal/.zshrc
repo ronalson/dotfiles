@@ -20,7 +20,6 @@ export VISUAL="zed"
 alias n=pnpm
 alias python=python3
 alias pip=pip3
-alias oc=opencode
 
 # fnm (Node version manager)
 if [[ -z "${FNM_MULTISHELL_PATH:-}" ]]; then
@@ -29,23 +28,20 @@ fi
 
 # pnpm
 export PNPM_HOME="$HOME/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
+typeset -U path
+path=("$PNPM_HOME/bin" ${path:#"$PNPM_HOME"})
+export PATH
+
+pnpm-upgrade() {
+  command corepack install -g pnpm@latest &&
+    command pnpm update -g --latest
+}
 # pnpm end
 
 # Lazy-load Docker Desktop config to enable Docker CLI completions (no compinit here; OMZ handles it)
 if [[ -d "$HOME/.docker/completions" ]]; then
   fpath=("$HOME/.docker/completions" $fpath)
 fi
-
-# opencode
-OPENCODE_BIN="$HOME/.opencode/bin"
-case ":$PATH:" in
-  *":$OPENCODE_BIN:"*) ;;
-  *) export PATH="$OPENCODE_BIN:$PATH" ;;
-esac
 
 # -----------------------------
 # Node version in RPROMPT (root-only, no cache)
@@ -88,8 +84,8 @@ RPROMPT='${NODE_RPROMPT}'
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
+path=("$HOME/.local/bin" "$BUN_INSTALL/bin" $path)
+export PATH
 
 # Vite+ bin (https://viteplus.dev)
 . "$HOME/.vite-plus/env"
