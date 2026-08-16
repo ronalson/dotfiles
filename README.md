@@ -6,6 +6,7 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 
 | Package | Description | Target |
 |---------|-------------|--------|
+| `agents` | Shared global instructions for Codex, Pi, and Claude | `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, `~/.claude/CLAUDE.md` |
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
 | `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
 | `ghostty` | [Ghostty](https://ghostty.org/) terminal emulator | `~/.config/ghostty/` |
@@ -56,6 +57,7 @@ cd ~/Code/dotfiles
 ### Stow a specific package
 
 ```bash
+./install.sh agents
 ./install.sh aerospace
 ./install.sh zsh-personal   # or zsh-work
 ```
