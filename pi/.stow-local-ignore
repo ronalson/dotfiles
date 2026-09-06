@@ -1,0 +1,25 @@
+# Default Stow exclusions
+
+RCS
+.+,v
+CVS
+\.\#.+
+\.cvsignore
+\.svn
+_darcs
+\.hg
+\.git
+\.gitignore
+\.gitmodules
+.+~
+\#.*\#
+^/README.*
+^/LICENSE.*
+^/COPYING
+node_modules
+
+# Draft extensions
+^/\.pi/agent/extensions/subagents$
+^/\.pi/agent/extensions/web-fetch$
+^/\.pi/agent/extensions/web-search$
+^/\.pi/agent/extensions/md-save$
