@@ -60,3 +60,4 @@
 - Commit bodies are optional. Include one when the motivation or important tradeoffs are not clear from the subject and diff.
 - Do not open a pull request unless explicitly requested.
 - Keep pull request descriptions simple: briefly describe the problem, then explain how it was solved.
+- Do not commit files inside `<repo-root>/context/` unless requested.
