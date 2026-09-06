@@ -25,4 +25,5 @@ _darcs
 ## Custom
 
 ^docs$
+^context$
 ^install\.sh$

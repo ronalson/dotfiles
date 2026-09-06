@@ -22,4 +22,5 @@ node_modules
 ^/\.pi/agent/extensions/subagents$
 ^/\.pi/agent/extensions/web-fetch$
 ^/\.pi/agent/extensions/web-search$
+^/\.pi/agent/extensions/md-link$
 ^/\.pi/agent/extensions/md-save$
