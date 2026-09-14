@@ -1,5 +1,10 @@
 {
   "allowedDirectories": [
     "/Users/ronalson/Code"
-  ]
+  ],
+  "audit": {
+    "enabled": true,
+    "retentionDays": 30,
+    "shadowEvaluation": false
+  }
 }
