@@ -17,6 +17,3 @@ _darcs
 ^/LICENSE.*
 ^/COPYING
 node_modules
-
-# Draft extensions
-^/\.pi/agent/extensions/subagents$

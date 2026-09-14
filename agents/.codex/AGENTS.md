@@ -49,6 +49,9 @@
 - Use fast, cost-efficient agents for bounded mechanical work.
 - Use stronger reasoning agents for independent architectural or adversarial analysis.
 - Delegate only when the work can proceed independently and delegation provides real value.
+- Consult `advisor` only for a difficult decision, architectural trade-off, or consequential independent review. Handle routine implementation, debugging, search, and checks yourself or with `scout` / `worker`.
+- Send `advisor` a self-contained packet: the precise question, desired outcome, acceptance criteria, constraints, viable options or review scope, excerpts with paths and line numbers, and known unknowns. Scout first when evidence is missing. One consult per question. Do not run `advisor` in parallel with `worker`.
+- After a high-value consult, save the advisor's substantive output in `<repo-root>/context/advisor/YYYY-MM-DD-topic.md`. Create the directory when needed and add a suffix rather than overwriting. Never write these notes to `context/astra/`. Do not commit `context/` files unless requested. For a small clarification without durable value, keep the answer in the conversation.
 
 ## Commits and Pull Requests
 
