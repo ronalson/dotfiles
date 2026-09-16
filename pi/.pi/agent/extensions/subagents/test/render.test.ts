@@ -42,6 +42,7 @@ function run(status: RunStatus, overrides: Partial<RunResult> = {}): RunResult {
       toolCalls: 2,
       turns: 1,
       durationMs: 1250,
+      generating: false,
     },
     model: "openai/gpt-test",
     ...overrides,
@@ -119,6 +120,7 @@ describe("renderSubagentResult", () => {
     const recentTools = Array.from({ length: 7 }, (_, index) => ({
       name: "read",
       preview: `recent preview ${index}`,
+      isError: false,
     }));
     const text = renderResult([
       run("running", {
@@ -137,7 +139,9 @@ describe("renderSubagentResult", () => {
     expect(text).not.toContain("recent preview 1");
     expect(text).toContain("recent preview 2");
     expect(text).toContain("Authentication starts in src/auth.ts");
-    expect(text).toContain("1 turn · 2 tools · 1.9k tok · 1.3s · $0.0123 · openai/gpt-test");
+    expect(text).toContain("1.3s · No activity observed");
+    expect(text).toContain("1 turn · 2 tools · 1.9k tok · $0.0123 · openai/gpt-test");
+    expect(text).not.toContain("1.9k tok · 1.3s");
   });
 
   it("uses full tasks from renderer context and renders output, errors, and usage when expanded", () => {
@@ -168,6 +172,157 @@ describe("renderSubagentResult", () => {
       const component = renderSubagentResult(
         toolResult([item]),
         { expanded, isPartial: false },
+        plainTheme,
+        { args: { tasks } },
+      );
+      expect(component.render(28).every((line) => visibleWidth(line) <= 28)).toBe(true);
+    }
+  });
+
+  it("does not format durations as 60.0s or Xm 60s", () => {
+    const almostMinute = run("running", {
+      progress: {
+        ...run("running").progress,
+        durationMs: 59_950,
+        lastActivityAgoMs: 59_950,
+        generating: false,
+      },
+    });
+    for (const text of [renderResult([almostMinute]).join("\n"), renderResult([almostMinute], true).join("\n")]) {
+      expect(text).not.toContain("60.0s");
+      expect(text).toContain("1m 0s");
+    }
+
+    const minuteRollover = run("running", {
+      progress: {
+        ...run("running").progress,
+        durationMs: 119_500,
+        lastActivityAgoMs: 119_500,
+        generating: false,
+      },
+    });
+    for (const text of [renderResult([minuteRollover]).join("\n"), renderResult([minuteRollover], true).join("\n")]) {
+      expect(text).not.toMatch(/\b60s\b/);
+      expect(text).toContain("2m 0s");
+    }
+  });
+
+  it("shows elapsed time and quiet duration in both views", () => {
+    const silent = run("running", {
+      progress: {
+        ...run("running").progress,
+        lastTextPreview: undefined,
+        durationMs: 134_000,
+        generating: false,
+      },
+    });
+    const collapsedSilent = renderResult([silent]).join("\n");
+    const expandedSilent = renderResult([silent], true).join("\n");
+    for (const text of [collapsedSilent, expandedSilent]) {
+      expect(text).toContain("2m 14s");
+      expect(text).toContain("No activity observed");
+    }
+    expect(collapsedSilent).toContain("1 turn · 2 tools · 1.9k tok · $0.0123");
+    expect(collapsedSilent).not.toContain("tok · 2m 14s");
+
+    const active = run("running", {
+      progress: {
+        ...run("running").progress,
+        durationMs: 134_000,
+        lastActivityAgoMs: 37_000,
+        generating: true,
+      },
+    });
+    const collapsedActive = renderResult([active]).join("\n");
+    const expandedActive = renderResult([active], true).join("\n");
+    for (const text of [collapsedActive, expandedActive]) {
+      expect(text).toContain("2m 14s");
+      expect(text).toContain("last activity 37.0s ago");
+      expect(text).toContain("generating");
+      expect(text).not.toContain("thinking");
+    }
+  });
+
+  it("renders failed tool completions as errors rather than success", () => {
+    const text = renderResult([
+      run("running", {
+        progress: {
+          ...run("running").progress,
+          recentTools: [
+            { name: "bash", preview: '{"command":"rm secret"}', isError: true },
+            { name: "read", preview: '{"path":"src/auth.ts"}', isError: false },
+          ],
+        },
+      }),
+    ]).join("\n");
+
+    expect(text).toContain("✗ bash");
+    expect(text).toContain("✓ read");
+    expect(text).not.toContain("✓ bash");
+  });
+
+  it("renders reported blocks distinctly from ordinary tool errors in both views", () => {
+    const item = run("running", {
+      progress: {
+        ...run("running").progress,
+        recentTools: [
+          {
+            name: "bash",
+            preview: '{"command":"sudo true"}',
+            isError: true,
+            block: { disposition: "denied_by_policy", rules: ["bash.privilege_escalation"] },
+            errorPreview: "Blocked by permission-gate: privilege escalation.",
+          },
+          {
+            name: "bash",
+            preview: '{"command":"rm cache"}',
+            isError: true,
+            block: { disposition: "confirmation_unavailable", rules: ["bash.destructive_command"] },
+            errorPreview: "Blocked by permission-gate: confirmation required.",
+          },
+          { name: "grep", preview: '{"pattern":"TODO"}', isError: true, errorPreview: "ripgrep failed" },
+        ],
+        reportedBlocks: {
+          deniedByPolicy: 1,
+          confirmationUnavailable: 1,
+          rules: ["bash.privilege_escalation", "bash.destructive_command"],
+          rulesOmitted: false,
+        },
+      },
+    });
+
+    const collapsed = renderResult([item]).join("\n");
+    const expanded = renderResult([item], true).join("\n");
+    for (const text of [collapsed, expanded]) {
+      expect(text).toContain("⊘ bash");
+      expect(text).toContain("blocked by policy");
+      expect(text).toContain("confirmation unavailable");
+      expect(text).toContain("✗ grep");
+      expect(text).toContain("Reported blocks: 1 policy denial, 1 confirmation unavailable");
+      expect(text).not.toContain("✗ bash");
+      expect(text).not.toContain("✓ bash");
+    }
+    expect(expanded).toContain("Blocked by permission-gate: privilege escalation.");
+    expect(expanded).toContain("ripgrep failed");
+    expect(collapsed).not.toContain("ripgrep failed");
+  });
+
+  it("keeps timing, generating, and error activity within narrow widths", () => {
+    const item = run("running", {
+      error: "A long failure diagnostic that must wrap cleanly without overflowing the terminal",
+      progress: {
+        ...run("running").progress,
+        durationMs: 134_000,
+        lastActivityAgoMs: 37_000,
+        generating: true,
+        recentTools: [{ name: "bash", preview: '{"command":"a deliberately long command that should wrap"}', isError: true }],
+      },
+    });
+    const tasks = [{ agent: "scout", task: "A full delegated task with enough text to wrap on narrow terminals" }];
+    for (const expanded of [false, true]) {
+      const component = renderSubagentResult(
+        toolResult([item]),
+        { expanded, isPartial: true },
         plainTheme,
         { args: { tasks } },
       );

@@ -32,12 +32,14 @@ interface CapturedTool {
 
 interface TestDependencies {
   discoverAgents(): AgentDiscovery;
+  resolvePermissionGateExtension(): string;
   resolveRadiusExtension(): string;
   runAgent(
     request: RunRequest,
     options: {
       signal?: AbortSignal;
       onProgress?: (progress: RunProgress) => void;
+      resolvePermissionGateExtension?: () => string;
       resolveRadiusExtension?: () => string;
     },
   ): Promise<RunResult>;
@@ -84,6 +86,7 @@ function progress(status: RunProgress["status"]): RunProgress {
     toolCalls: 0,
     turns: status === "succeeded" ? 1 : 0,
     durationMs: 10,
+    generating: false,
   };
 }
 
@@ -102,6 +105,7 @@ function result(request: RunRequest, overrides: Partial<RunResult> = {}): RunRes
 function dependencies(overrides: Partial<TestDependencies> = {}): TestDependencies {
   return {
     discoverAgents: () => ({ agents: [role("reviewer"), role("scout"), role("worker")], diagnostics: [] }),
+    resolvePermissionGateExtension: () => "/approved/permission-gate/index.ts",
     resolveRadiusExtension: () => "/approved/radius-web-search.ts",
     runAgent: async (request) => result(request),
     workingDirectoryAvailable: () => true,
@@ -262,20 +266,57 @@ describe("subagent preflight", () => {
     expect(runAgent).not.toHaveBeenCalled();
   });
 
-  it("resolves Radius once before launch and passes only that resolved path to runners", async () => {
+  it("resolves the gate and Radius once before launch and passes only those resolved paths to runners", async () => {
+    const resolvePermissionGateExtension = vi.fn(() => "/approved/permission-gate/index.ts");
     const resolveRadiusExtension = vi.fn(() => "/approved/radius.ts");
     const runAgent = vi.fn<TestDependencies["runAgent"]>(async (request, options) => {
+      expect(options.resolvePermissionGateExtension?.()).toBe("/approved/permission-gate/index.ts");
       expect(options.resolveRadiusExtension?.()).toBe("/approved/radius.ts");
       return result(request);
     });
-    const tool = captureTool({ resolveRadiusExtension, runAgent });
+    const tool = captureTool({ resolvePermissionGateExtension, resolveRadiusExtension, runAgent });
 
     await invoke(tool, [
       { agent: "scout", task: "research" },
       { agent: "reviewer", task: "review" },
     ]);
+    expect(resolvePermissionGateExtension).toHaveBeenCalledOnce();
     expect(resolveRadiusExtension).toHaveBeenCalledOnce();
     expect(runAgent).toHaveBeenCalledTimes(2);
+  });
+
+  it("resolves the gate for worker-only calls without resolving Radius", async () => {
+    const resolvePermissionGateExtension = vi.fn(() => "/approved/permission-gate/index.ts");
+    const resolveRadiusExtension = vi.fn(() => "/approved/radius.ts");
+    const runAgent = vi.fn<TestDependencies["runAgent"]>(async (request, options) => {
+      expect(options.resolvePermissionGateExtension?.()).toBe("/approved/permission-gate/index.ts");
+      expect(options.resolveRadiusExtension).toBeUndefined();
+      return result(request);
+    });
+    const tool = captureTool({ resolvePermissionGateExtension, resolveRadiusExtension, runAgent });
+
+    await invoke(tool, [{ agent: "worker", task: "implement" }]);
+    expect(resolvePermissionGateExtension).toHaveBeenCalledOnce();
+    expect(resolveRadiusExtension).not.toHaveBeenCalled();
+    expect(runAgent).toHaveBeenCalledOnce();
+  });
+
+  it("fails the entire call when the gate cannot be resolved", async () => {
+    const runAgent = vi.fn<TestDependencies["runAgent"]>();
+    const resolveRadiusExtension = vi.fn(() => "/approved/radius.ts");
+    const tool = captureTool({
+      runAgent,
+      resolveRadiusExtension,
+      resolvePermissionGateExtension() {
+        throw new Error("Install v0.4.0 with: pi install git:git@github.com:ronalson/pi-permission-gate@v0.4.0");
+      },
+    });
+
+    await expect(invoke(tool, [{ agent: "scout", task: "research" }])).rejects.toThrow(
+      "pi install git:git@github.com:ronalson/pi-permission-gate@v0.4.0",
+    );
+    expect(runAgent).not.toHaveBeenCalled();
+    expect(resolveRadiusExtension).not.toHaveBeenCalled();
   });
 
   it("fails the entire call when Radius cannot be resolved", async () => {
@@ -397,6 +438,83 @@ describe("tool result policy", () => {
       ]),
     ).rejects.toThrow("All 2 subagents failed");
     expect(completed).toEqual(["single", "first", "second"]);
+  });
+
+  it("appends a reserved block summary to single and parallel content", async () => {
+    const reportedBlocks = {
+      deniedByPolicy: 2,
+      confirmationUnavailable: 1,
+      rules: ["bash.privilege_escalation"],
+      rulesOmitted: false,
+    };
+    const tool = captureTool({
+      runAgent: async (request) => result(request, {
+        output: request.task === "huge" ? "x".repeat(60 * 1024) : `output:${request.task}`,
+        progress: { ...progress("succeeded"), reportedBlocks },
+      }),
+    });
+
+    const single = await invoke(tool, [{ agent: "worker", task: "implement" }]);
+    expect(single.content[0]?.text).toContain("output:implement");
+    expect(single.content[0]?.text).toContain("Reported blocks: 2 policy denials, 1 confirmation unavailable.");
+    expect(single.content[0]?.text).toContain("Sampled rules: bash.privilege_escalation.");
+    expect(single.content[0]?.text).toContain("Blocked attempts did not complete");
+    expect(single.content[0]?.text).not.toContain("sudo");
+    expect(single.details.version).toBe(1);
+
+    const huge = await invoke(tool, [{ agent: "worker", task: "huge" }]);
+    expect(huge.content[0]?.text).toContain("Reported blocks: 2 policy denials, 1 confirmation unavailable.");
+    expect(huge.content[0]?.text.endsWith(
+      "Blocked attempts did not complete; related work remains unresolved unless completed independently.",
+    )).toBe(true);
+    expect(Buffer.byteLength(huge.content[0]?.text ?? "")).toBeLessThanOrEqual(50 * 1024);
+
+    const parallel = await invoke(tool, [
+      { agent: "worker", task: "huge" },
+      { agent: "reviewer", task: "huge" },
+    ]);
+    expect(parallel.content[0]?.text).toContain("Reported blocks:");
+    expect(parallel.content[0]?.text).toContain("Blocked attempts did not complete");
+    expect(Buffer.byteLength(parallel.content[0]?.text ?? "")).toBeLessThanOrEqual(50 * 1024);
+    expect((parallel.content[0]?.text ?? "").split("\n").length).toBeLessThanOrEqual(2000);
+  });
+
+  it("keeps partial output and block summaries in single and all-failed diagnostics", async () => {
+    const reportedBlocks = {
+      deniedByPolicy: 1,
+      confirmationUnavailable: 0,
+      rules: ["bash.privilege_escalation"],
+      rulesOmitted: false,
+    };
+    const tool = captureTool({
+      runAgent: async (request) => result(request, {
+        status: "failed",
+        output: request.task === "huge" ? `partial-${"x".repeat(20_000)}` : `partial:${request.task}`,
+        error: `${request.task} failed`,
+        progress: { ...progress("failed"), reportedBlocks },
+      }),
+    });
+
+    await expect(invoke(tool, [{ agent: "worker", task: "single" }])).rejects.toThrow(
+      /Subagent worker failed: single failed[\s\S]*Partial output:\npartial:single[\s\S]*Reported blocks: 1 policy denial\./,
+    );
+
+    try {
+      await invoke(tool, [
+        { agent: "worker", task: "huge" },
+        { agent: "reviewer", task: "second" },
+      ]);
+      throw new Error("expected all-failed diagnostic");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      expect(message).toContain("All 2 subagents failed");
+      expect(message).toContain("Partial output:");
+      expect(message).toContain("Reported blocks:");
+      expect(message).toContain("bash.privilege_escalation");
+      expect(message).not.toContain("sudo true");
+      expect(Buffer.byteLength(message)).toBeLessThanOrEqual(8192);
+      expect(message).toMatch(/Reported blocks:[\s\S]*Blocked attempts did not complete/);
+    }
   });
 
   it("budgets parallel content and stored output below Pi limits", async () => {

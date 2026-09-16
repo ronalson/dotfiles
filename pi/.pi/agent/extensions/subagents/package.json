@@ -6,9 +6,11 @@
     "node": ">=22.19.0"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --exclude test/permission-gate.integration.test.ts",
+    "test:integration": "vitest run test/permission-gate.integration.test.ts",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run typecheck && npm test",
+    "check:integration": "npm run check && npm run test:integration"
   },
   "peerDependencies": {
     "@earendil-works/pi-agent-core": "*",

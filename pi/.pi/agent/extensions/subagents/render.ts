@@ -6,6 +6,11 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text, type Component } from "@earendil-works/pi-tui";
 import type { SubagentDetails, SubagentParams } from "./index.ts";
+import {
+  formatReportedBlocksCounts,
+  formatReportedBlocksSummary,
+  type PermissionGateBlockDisposition,
+} from "./permission-gate-block.ts";
 import type { RunProgress, RunResult, RunStatus } from "./runner.ts";
 
 const STATUS_DISPLAY: Record<RunStatus, { icon: string; color: "muted" | "warning" | "success" | "error" }> = {
@@ -30,9 +35,14 @@ function formatTokens(tokens: number): string {
 }
 
 function formatDuration(milliseconds: number): string {
-  if (milliseconds < 1000) return `${Math.max(0, Math.round(milliseconds))}ms`;
-  if (milliseconds < 60_000) return `${(milliseconds / 1000).toFixed(1)}s`;
-  return `${Math.floor(milliseconds / 60_000)}m ${Math.round((milliseconds % 60_000) / 1000)}s`;
+  const ms = Math.max(0, milliseconds);
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+
+  const tenths = Math.round(ms / 100);
+  if (tenths < 600) return `${(tenths / 10).toFixed(1)}s`;
+
+  const totalSeconds = Math.round(ms / 1000);
+  return `${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`;
 }
 
 function compactStats(run: RunResult): string {
@@ -41,11 +51,18 @@ function compactStats(run: RunResult): string {
     `${progress.turns} turn${progress.turns === 1 ? "" : "s"}`,
     `${progress.toolCalls} tool${progress.toolCalls === 1 ? "" : "s"}`,
     `${formatTokens(run.usage.totalTokens)} tok`,
-    formatDuration(progress.durationMs),
     `$${run.usage.cost.total.toFixed(4)}`,
   ];
   if (run.model) parts.push(run.model);
   return parts.join(" · ");
+}
+
+function formatTiming(progress: RunProgress): string {
+  const elapsed = formatDuration(progress.durationMs);
+  if (progress.lastActivityAgoMs === undefined) {
+    return `${elapsed} · No activity observed`;
+  }
+  return `${elapsed} · last activity ${formatDuration(progress.lastActivityAgoMs)} ago`;
 }
 
 function usageBreakdown(run: RunResult): string {
@@ -68,8 +85,15 @@ function statusText(status: RunStatus, theme: Theme): string {
   return theme.fg(display.color, `${display.icon} ${status}`);
 }
 
-function renderActivity(progress: RunProgress, theme: Theme): string[] {
+function blockLabel(disposition: PermissionGateBlockDisposition): string {
+  return disposition === "denied_by_policy" ? "blocked by policy" : "confirmation unavailable";
+}
+
+function renderActivity(progress: RunProgress, theme: Theme, expanded = false): string[] {
   const lines: string[] = [];
+  if (progress.generating && progress.status === "running") {
+    lines.push(theme.fg("muted", "  generating"));
+  }
   for (const tool of progress.activeTools) {
     lines.push(`  ${theme.fg("warning", "→")} ${theme.fg("accent", tool.name)} ${theme.fg("dim", tool.preview)}`);
   }
@@ -77,7 +101,24 @@ function renderActivity(progress: RunProgress, theme: Theme): string[] {
     lines.push(theme.fg("muted", `  … ${progress.activeToolOverflow} additional active tool calls`));
   }
   for (const tool of progress.recentTools.slice(-5)) {
-    lines.push(`  ${theme.fg("success", "✓")} ${theme.fg("muted", tool.name)} ${theme.fg("dim", tool.preview)}`);
+    if (tool.block) {
+      const icon = theme.fg("warning", "⊘");
+      const label = theme.fg("warning", blockLabel(tool.block.disposition));
+      lines.push(`  ${icon} ${theme.fg("muted", tool.name)} ${label} ${theme.fg("dim", tool.preview)}`);
+      if (expanded && tool.errorPreview) {
+        lines.push(theme.fg("dim", `    ${preview(tool.errorPreview, 240)}`));
+      }
+    } else {
+      const icon = tool.isError ? theme.fg("error", "✗") : theme.fg("success", "✓");
+      lines.push(`  ${icon} ${theme.fg("muted", tool.name)} ${theme.fg("dim", tool.preview)}`);
+      if (expanded && tool.isError && tool.errorPreview) {
+        lines.push(theme.fg("error", `    ${preview(tool.errorPreview, 240)}`));
+      }
+    }
+  }
+  if (progress.reportedBlocks) {
+    const counts = formatReportedBlocksCounts(progress.reportedBlocks);
+    lines.push(theme.fg("warning", `  ${expanded ? formatReportedBlocksSummary(progress.reportedBlocks) ?? counts : counts}`));
   }
   if (progress.lastTextPreview) {
     lines.push(theme.fg("toolOutput", `  ${preview(progress.lastTextPreview, 240)}`));
@@ -138,9 +179,9 @@ export function renderSubagentResult(
     for (const run of runs) {
       const display = STATUS_DISPLAY[run.status] ?? STATUS_DISPLAY.failed;
       lines.push(
-        `${theme.fg(display.color, display.icon)} ${theme.fg("accent", run.agent)} ${theme.fg("muted", `— ${run.taskPreview}`)}`,
+        `${theme.fg(display.color, display.icon)} ${theme.fg("accent", run.agent)} ${theme.fg("muted", `— ${run.taskPreview}`)} ${theme.fg("dim", `· ${formatTiming(run.progress)}`)}`,
       );
-      lines.push(...renderActivity(run.progress, theme));
+      lines.push(...renderActivity(run.progress, theme, false));
       lines.push(theme.fg("dim", `  ${compactStats(run)}`));
       if (run.error) lines.push(theme.fg("error", `  ${preview(run.error, 240)}`));
     }
@@ -164,12 +205,14 @@ export function renderSubagentResult(
         0,
       ),
     );
+    container.addChild(new Text(theme.fg("dim", formatTiming(run.progress)), 0, 0));
     container.addChild(new Text(theme.fg("muted", "Task"), 0, 0));
     container.addChild(new Text(tasks[index]?.task ?? run.taskPreview, 0, 0));
 
-    if (run.progress.activeTools.length > 0 || run.progress.recentTools.length > 0) {
+    const activityLines = renderActivity(run.progress, theme, true);
+    if (activityLines.length > 0) {
       container.addChild(new Spacer(1));
-      container.addChild(new Text(renderActivity(run.progress, theme).join("\n"), 0, 0));
+      container.addChild(new Text(activityLines.join("\n"), 0, 0));
     }
     if (run.output) {
       container.addChild(new Spacer(1));

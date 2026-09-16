@@ -1,11 +1,19 @@
 import { accessSync, constants, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";
 import { getAgentDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
 
 export const BUILTIN_AGENT_TOOLS = ["read", "bash", "edit", "write", "grep", "find", "ls"] as const;
 export const RADIUS_WEB_SEARCH_TOOL = "radius_web_search";
 export const RADIUS_INSTALL_COMMAND = "pi install npm:@earendil-works/pi-radius";
+export const PERMISSION_GATE_EXPECTED_NAME = "pi-permission-gate";
+export const PERMISSION_GATE_EXPECTED_VERSION = "0.4.0";
+export const PERMISSION_GATE_INSTALL_COMMAND =
+  "pi install git:git@github.com:ronalson/pi-permission-gate@v0.4.0";
+
+const PERMISSION_GATE_PACKAGE_SEGMENTS = ["git", "github.com", "ronalson", "pi-permission-gate"] as const;
+const MAX_GATE_DIAGNOSTIC_BYTES = 512;
 
 const ALLOWED_TOOLS = new Set<string>([...BUILTIN_AGENT_TOOLS, RADIUS_WEB_SEARCH_TOOL]);
 const RADIUS_ROLES = new Set(["scout", "reviewer"]);
@@ -216,6 +224,90 @@ export function resolveRadiusWebSearchExtension(agentDir = getAgentDir()): strin
   } catch {
     throw new Error(
       `The '${RADIUS_WEB_SEARCH_TOOL}' tool requires @earendil-works/pi-radius. Install it with: ${RADIUS_INSTALL_COMMAND}`,
+    );
+  }
+
+  return extensionPath;
+}
+
+function boundedGateDiagnostic(message: string): string {
+  if (Buffer.byteLength(message, "utf8") <= MAX_GATE_DIAGNOSTIC_BYTES) return message;
+  const suffix = "…";
+  const bytes = Buffer.from(message, "utf8");
+  const decoder = new StringDecoder("utf8");
+  return decoder.write(bytes.subarray(0, Math.max(0, MAX_GATE_DIAGNOSTIC_BYTES - Buffer.byteLength(suffix)))) + suffix;
+}
+
+function permissionGateUnavailable(detail: string): Error {
+  return new Error(
+    boundedGateDiagnostic(
+      `Required permission-gate ${detail}. Install v${PERMISSION_GATE_EXPECTED_VERSION} with: ${PERMISSION_GATE_INSTALL_COMMAND}`,
+    ),
+  );
+}
+
+function preflightReadableFile(path: string, label: string): void {
+  try {
+    const stats = statSync(path);
+    if (!stats.isFile()) {
+      throw permissionGateUnavailable(`${label} is not a regular file at ${path}`);
+    }
+    if ((stats.mode & 0o444) === 0) {
+      throw permissionGateUnavailable(`${label} at ${path} is unreadable`);
+    }
+    accessSync(path, constants.R_OK);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Required permission-gate ")) throw error;
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      throw permissionGateUnavailable(`${label} is missing at ${path}`);
+    }
+    throw permissionGateUnavailable(`${label} at ${path} is unreadable`);
+  }
+}
+
+function readPermissionGatePackage(packageJsonPath: string): { name: string; version: string } {
+  let raw: string;
+  try {
+    raw = readFileSync(packageJsonPath, "utf8");
+  } catch {
+    throw permissionGateUnavailable(`package.json at ${packageJsonPath} is unreadable`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw permissionGateUnavailable(`package.json at ${packageJsonPath} is malformed`);
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw permissionGateUnavailable(`package.json at ${packageJsonPath} is malformed`);
+  }
+
+  const record = parsed as { name?: unknown; version?: unknown };
+  if (typeof record.name !== "string" || record.name.trim() === "" || typeof record.version !== "string" || record.version.trim() === "") {
+    throw permissionGateUnavailable(`package.json at ${packageJsonPath} is malformed`);
+  }
+  return { name: record.name.trim(), version: record.version.trim() };
+}
+
+export function resolvePermissionGateExtension(agentDir = getAgentDir()): string {
+  const packageDir = join(agentDir, ...PERMISSION_GATE_PACKAGE_SEGMENTS);
+  const extensionPath = join(packageDir, "index.ts");
+  const packageJsonPath = join(packageDir, "package.json");
+
+  preflightReadableFile(extensionPath, "index.ts");
+  preflightReadableFile(packageJsonPath, "package.json");
+
+  const { name, version } = readPermissionGatePackage(packageJsonPath);
+  if (name !== PERMISSION_GATE_EXPECTED_NAME) {
+    throw permissionGateUnavailable(
+      `package name is '${name}', expected '${PERMISSION_GATE_EXPECTED_NAME}' at ${packageJsonPath}`,
+    );
+  }
+  if (version !== PERMISSION_GATE_EXPECTED_VERSION) {
+    throw permissionGateUnavailable(
+      `version is '${version}', expected '${PERMISSION_GATE_EXPECTED_VERSION}' at ${packageJsonPath}`,
     );
   }
 

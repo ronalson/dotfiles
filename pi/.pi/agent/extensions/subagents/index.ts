@@ -11,11 +11,17 @@ import type { AgentConfig, AgentDiscovery } from "./agents.ts";
 import {
   discoverAgents,
   RADIUS_WEB_SEARCH_TOOL,
+  resolvePermissionGateExtension,
   resolveRadiusWebSearchExtension,
 } from "./agents.ts";
+import {
+  formatReportedBlocksSummary,
+  mergeReportedBlocks,
+  type ReportedBlocks,
+} from "./permission-gate-block.ts";
 import { renderSubagentCall, renderSubagentResult } from "./render.ts";
 import type { RunProgress, RunRequest, RunResult } from "./runner.ts";
-import { aggregateUsage, emptyUsage, runAgent } from "./runner.ts";
+import { aggregateUsage, boundOutputReservingSuffix, emptyUsage, runAgent } from "./runner.ts";
 
 const MAX_TASK_BYTES = 64 * 1024;
 const MAX_ERROR_BYTES = 4096;
@@ -103,10 +109,12 @@ export class FifoSemaphore {
 
 interface ExtensionDependencies {
   discoverAgents(): AgentDiscovery;
+  resolvePermissionGateExtension(): string;
   resolveRadiusExtension(): string;
   runAgent(request: RunRequest, options: {
     signal?: AbortSignal;
     onProgress?: (progress: RunProgress) => void;
+    resolvePermissionGateExtension?: () => string;
     resolveRadiusExtension?: () => string;
   }): Promise<RunResult>;
   workingDirectoryAvailable(cwd: string): boolean;
@@ -117,6 +125,7 @@ const processSemaphore = new FifoSemaphore(4);
 
 const defaultDependencies: ExtensionDependencies = {
   discoverAgents,
+  resolvePermissionGateExtension,
   resolveRadiusExtension: resolveRadiusWebSearchExtension,
   runAgent,
   workingDirectoryAvailable(cwd) {
@@ -166,6 +175,7 @@ function emptyProgress(status: RunProgress["status"]): RunProgress {
     toolCalls: 0,
     turns: 0,
     durationMs: 0,
+    generating: false,
   };
 }
 
@@ -199,7 +209,18 @@ function details(runs: RunResult[]): SubagentDetails {
       progress: {
         ...run.progress,
         activeTools: run.progress.activeTools.map((tool) => ({ ...tool })),
-        recentTools: run.progress.recentTools.map((tool) => ({ ...tool })),
+        recentTools: run.progress.recentTools.map((tool) => ({
+          ...tool,
+          ...(tool.block ? { block: { ...tool.block, rules: [...tool.block.rules] } } : {}),
+        })),
+        ...(run.progress.reportedBlocks
+          ? {
+              reportedBlocks: {
+                ...run.progress.reportedBlocks,
+                rules: [...run.progress.reportedBlocks.rules],
+              },
+            }
+          : {}),
       },
     })),
   };
@@ -251,6 +272,23 @@ function boundedSectionOutput(output: string, maxBytes: number, maxLines: number
   return truncation.content ? `${truncation.content}\n\n${notice}` : notice;
 }
 
+function reportedBlocksFor(run: RunResult): ReportedBlocks | undefined {
+  return run.progress.reportedBlocks;
+}
+
+function withBlockSummary(
+  output: string,
+  blocks: ReportedBlocks | undefined,
+  maxBytes = DEFAULT_MAX_BYTES,
+  maxLines = DEFAULT_MAX_LINES,
+): string {
+  const summary = formatReportedBlocksSummary(blocks);
+  if (!summary) {
+    return truncateHead(output, { maxBytes, maxLines }).content;
+  }
+  return boundOutputReservingSuffix(output, summary, maxBytes, maxLines);
+}
+
 function budgetParallelResults(runs: RunResult[]): { runs: RunResult[]; content: string } {
   const perTaskBytes = Math.floor((DEFAULT_MAX_BYTES - PARALLEL_OUTPUT_RESERVE_BYTES) / runs.length);
   const perTaskLines = Math.floor((DEFAULT_MAX_LINES - PARALLEL_OUTPUT_RESERVE_LINES) / runs.length);
@@ -276,13 +314,23 @@ function budgetParallelResults(runs: RunResult[]): { runs: RunResult[]; content:
   const combined = `Parallel: ${succeeded}/${runs.length} succeeded\n\n${sections.join("\n\n---\n\n")}`;
   return {
     runs: boundedRuns,
-    content: truncateHead(combined, { maxBytes: DEFAULT_MAX_BYTES, maxLines: DEFAULT_MAX_LINES }).content,
+    content: withBlockSummary(combined, mergeReportedBlocks(runs.map(reportedBlocksFor))),
   };
 }
 
+function failureDiagnostic(result: RunResult): string {
+  const header = `Subagent ${result.agent} failed: ${result.error || "no diagnostic"}`;
+  const body = result.output.trim() === "" ? header : `${header}\n\nPartial output:\n${result.output}`;
+  return withBlockSummary(body, reportedBlocksFor(result), MAX_ERROR_BYTES, DEFAULT_MAX_LINES);
+}
+
 function aggregateFailure(runs: RunResult[]): Error {
-  const lines = runs.map((run) => `${run.agent}: ${run.error || "failed without a diagnostic"}`);
-  return new Error(boundedText(`All ${runs.length} subagents failed:\n${lines.join("\n")}`, MAX_AGGREGATE_ERROR_BYTES));
+  const sections = runs.map((run) => {
+    const header = `${run.agent}: ${run.error || "failed without a diagnostic"}`;
+    return run.output.trim() === "" ? header : `${header}\nPartial output:\n${run.output}`;
+  });
+  const body = `All ${runs.length} subagents failed:\n${sections.join("\n\n")}`;
+  return new Error(withBlockSummary(body, mergeReportedBlocks(runs.map(reportedBlocksFor)), MAX_AGGREGATE_ERROR_BYTES, DEFAULT_MAX_LINES));
 }
 
 function preflight(
@@ -290,7 +338,7 @@ function preflight(
   agents: Map<string, AgentConfig>,
   cwd: string,
   dependencies: ExtensionDependencies,
-): { requests: RunRequest[]; radiusExtensionPath?: string } {
+): { requests: RunRequest[]; permissionGateExtensionPath: string; radiusExtensionPath?: string } {
   if (!Array.isArray(params.tasks) || params.tasks.length < 1 || params.tasks.length > 4) {
     throw new Error("subagent requires between one and four tasks");
   }
@@ -318,6 +366,7 @@ function preflight(
   const needsRadius = requests.some((request) => request.agent.tools.includes(RADIUS_WEB_SEARCH_TOOL));
   return {
     requests,
+    permissionGateExtensionPath: dependencies.resolvePermissionGateExtension(),
     ...(needsRadius ? { radiusExtensionPath: dependencies.resolveRadiusExtension() } : {}),
   };
 }
@@ -379,6 +428,7 @@ export function registerSubagentExtension(
         ...(parentModel === undefined ? {} : { parentModel }),
         ...(ctx.thinkingLevel === undefined ? {} : { parentThinking: ctx.thinkingLevel }),
       }));
+      const permissionGateExtensionPath = preflightResult.permissionGateExtensionPath;
       const radiusExtensionPath = preflightResult.radiusExtensionPath;
       const runs = requests.map((request) => placeholder(request.agent.name, request.task, "queued"));
 
@@ -411,6 +461,7 @@ export function registerSubagentExtension(
         try {
           const result = await dependencies.runAgent(request, {
             signal,
+            resolvePermissionGateExtension: () => permissionGateExtensionPath,
             ...(radiusExtensionPath === undefined
               ? {}
               : { resolveRadiusExtension: () => radiusExtensionPath }),
@@ -442,10 +493,10 @@ export function registerSubagentExtension(
       if (results.length === 1) {
         const result = results[0];
         if (result.status !== "succeeded") {
-          throw new Error(boundedText(`Subagent ${result.agent} failed: ${result.error || "no diagnostic"}`, MAX_ERROR_BYTES));
+          throw new Error(failureDiagnostic(result));
         }
         return {
-          content: [{ type: "text", text: result.output }],
+          content: [{ type: "text", text: withBlockSummary(result.output, reportedBlocksFor(result)) }],
           details: details(results),
           usage: aggregateUsage(results.map((run) => run.usage)),
         };

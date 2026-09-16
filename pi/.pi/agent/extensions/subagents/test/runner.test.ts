@@ -7,16 +7,20 @@ import { PassThrough } from "node:stream";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Usage } from "@earendil-works/pi-ai";
 import type { AgentConfig, ThinkingLevel } from "../agents.ts";
+import { PERMISSION_GATE_BLOCK_MARKER } from "../permission-gate-block.ts";
 import {
   aggregateUsage,
   boundFinalOutput,
+  boundOutputReservingSuffix,
   buildChildArguments,
   JsonlRunParser,
+  PI_INVOCATION_ERROR,
   prepareAgentRun,
   resolvePiInvocation,
   runAgent,
   type ChildProcessLike,
   type PiRuntime,
+  type PrepareRunOptions,
   type RunRequest,
   type SpawnChild,
 } from "../runner.ts";
@@ -54,6 +58,24 @@ function runtime(overrides: Partial<PiRuntime> = {}): PiRuntime {
   };
 }
 
+const GATE_PATH = "/agent/git/github.com/ronalson/pi-permission-gate/index.ts";
+
+function flagValues(args: string[], flag: string): string[] {
+  const values: string[] = [];
+  for (let index = 0; index < args.length; index++) {
+    if (args[index] === flag && args[index + 1] !== undefined) values.push(args[index + 1]!);
+  }
+  return values;
+}
+
+function prepareOptions(overrides: PrepareRunOptions = {}): PrepareRunOptions {
+  return {
+    runtime: runtime(),
+    resolvePermissionGateExtension: () => GATE_PATH,
+    ...overrides,
+  };
+}
+
 afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
 });
@@ -63,6 +85,7 @@ describe("buildChildArguments", () => {
     const args = buildChildArguments({
       agent: agent({ tools: ["read", "grep", "find", "ls", "bash", "edit", "write"] }),
       promptPath: "/tmp/prompt.md",
+      permissionGateExtensionPath: GATE_PATH,
     });
 
     expect(args).toEqual([
@@ -76,6 +99,8 @@ describe("buildChildArguments", () => {
       "--no-approve",
       "--tools",
       "read,grep,find,ls,bash,edit,write",
+      "--extension",
+      GATE_PATH,
       "--append-system-prompt",
       "/tmp/prompt.md",
     ]);
@@ -138,6 +163,7 @@ describe("buildChildArguments", () => {
       parentModel: testCase.parentModel,
       parentThinking: testCase.parentThinking,
       promptPath: "/tmp/prompt.md",
+      permissionGateExtensionPath: GATE_PATH,
     });
 
     expect(flagValue(args, "--model")).toBe(testCase.expectedModel);
@@ -145,17 +171,18 @@ describe("buildChildArguments", () => {
     expect(args).not.toContain("--models");
   });
 
-  it("loads only the implementation-resolved Radius extension for approved roles", () => {
+  it("loads the gate for every role and Radius as a second explicit extension for approved roles", () => {
     const radiusPath = "/agent/npm/node_modules/@earendil-works/pi-radius/extensions/radius-web-search.ts";
     const args = buildChildArguments({
       agent: agent({ name: "scout", tools: ["read", "radius_web_search"] }),
       promptPath: "/tmp/prompt.md",
+      permissionGateExtensionPath: GATE_PATH,
       radiusExtensionPath: radiusPath,
     });
 
-    expect(flagValue(args, "--extension")).toBe(radiusPath);
+    expect(flagValues(args, "--extension")).toEqual([GATE_PATH, radiusPath]);
     expect(flagValue(args, "--tools")).toBe("read,radius_web_search");
-    expect(args.filter((value) => value === "--extension")).toHaveLength(1);
+    expect(args.filter((value) => value === "--extension")).toHaveLength(2);
   });
 
   it("rejects Radius for unapproved roles and extension paths for roles that do not declare it", () => {
@@ -163,6 +190,7 @@ describe("buildChildArguments", () => {
       buildChildArguments({
         agent: agent({ tools: ["read", "radius_web_search"] }),
         promptPath: "/tmp/prompt.md",
+        permissionGateExtensionPath: GATE_PATH,
         radiusExtensionPath: "/tmp/radius.ts",
       }),
     ).toThrow("allowed only for scout and reviewer");
@@ -171,9 +199,20 @@ describe("buildChildArguments", () => {
       buildChildArguments({
         agent: agent(),
         promptPath: "/tmp/prompt.md",
+        permissionGateExtensionPath: GATE_PATH,
         radiusExtensionPath: "/role-controlled/extension.ts",
       }),
     ).toThrow("does not declare");
+  });
+
+  it("rejects a missing gate path", () => {
+    expect(() =>
+      buildChildArguments({
+        agent: agent(),
+        promptPath: "/tmp/prompt.md",
+        permissionGateExtensionPath: "",
+      }),
+    ).toThrow("permission-gate extension");
   });
 });
 
@@ -196,20 +235,20 @@ describe("resolvePiInvocation", () => {
     ).toEqual({ command: "/Applications/Pi/pi", args: childArgs });
   });
 
-  it("falls back to pi on PATH for generic runtimes and Bun virtual scripts", () => {
-    expect(
+  it("fails before spawn instead of selecting PATH pi", () => {
+    expect(() =>
       resolvePiInvocation(
         childArgs,
         runtime({ execPath: "/usr/bin/bun", argv: ["bun", "/$bunfs/root/cli.js"], exists: () => true }),
       ),
-    ).toEqual({ command: "pi", args: childArgs });
+    ).toThrow(PI_INVOCATION_ERROR);
 
-    expect(
+    expect(() =>
       resolvePiInvocation(
         childArgs,
         runtime({ execPath: "C:\\node.exe", argv: ["node"], exists: () => false }),
       ),
-    ).toEqual({ command: "pi", args: childArgs });
+    ).toThrow(PI_INVOCATION_ERROR);
   });
 });
 
@@ -223,7 +262,7 @@ describe("prepareAgentRun", () => {
       parentModel: "openai/gpt-parent",
       parentThinking: "high" as const,
     };
-    const prepared = await prepareAgentRun(request, { tempRoot, runtime: runtime() });
+    const prepared = await prepareAgentRun(request, { tempRoot, ...prepareOptions() });
 
     expect(prepared.command).toBe("/usr/bin/node");
     expect(prepared.cwd).toBe(request.cwd);
@@ -241,11 +280,12 @@ describe("prepareAgentRun", () => {
     await prepared.cleanup();
   });
 
-  it("resolves Radius only for roles that declare it", async () => {
+  it("resolves the gate for every role and Radius only for roles that declare it", async () => {
     const tempRoot = await temporaryDirectory();
     const radiusPath = join(tempRoot, "installed-radius.ts");
     writeFileSync(radiusPath, "export default () => {};\n");
-    const resolver = vi.fn(() => radiusPath);
+    const gateResolver = vi.fn(() => GATE_PATH);
+    const radiusResolver = vi.fn(() => radiusPath);
 
     const scoutRun = await prepareAgentRun(
       {
@@ -253,19 +293,22 @@ describe("prepareAgentRun", () => {
         task: "Research current behavior",
         cwd: "/workspace",
       },
-      { tempRoot, runtime: runtime(), resolveRadiusExtension: resolver },
+      prepareOptions({ tempRoot, resolvePermissionGateExtension: gateResolver, resolveRadiusExtension: radiusResolver }),
     );
-    expect(resolver).toHaveBeenCalledOnce();
-    expect(flagValue(scoutRun.args, "--extension")).toBe(radiusPath);
+    expect(gateResolver).toHaveBeenCalledOnce();
+    expect(radiusResolver).toHaveBeenCalledOnce();
+    expect(flagValues(scoutRun.args, "--extension")).toEqual([GATE_PATH, radiusPath]);
     await scoutRun.cleanup();
 
-    resolver.mockClear();
+    gateResolver.mockClear();
+    radiusResolver.mockClear();
     const workerRun = await prepareAgentRun(
       { agent: agent(), task: "Implement behavior", cwd: "/workspace" },
-      { tempRoot, runtime: runtime(), resolveRadiusExtension: resolver },
+      prepareOptions({ tempRoot, resolvePermissionGateExtension: gateResolver, resolveRadiusExtension: radiusResolver }),
     );
-    expect(resolver).not.toHaveBeenCalled();
-    expect(workerRun.args).not.toContain("--extension");
+    expect(gateResolver).toHaveBeenCalledOnce();
+    expect(radiusResolver).not.toHaveBeenCalled();
+    expect(flagValues(workerRun.args, "--extension")).toEqual([GATE_PATH]);
     await workerRun.cleanup();
   });
 
@@ -277,16 +320,48 @@ describe("prepareAgentRun", () => {
       ...agent({ name: "reviewer", tools: ["read", "radius_web_search"] }),
       extension: "/role-controlled/extension.ts",
       extensions: ["/another/role-extension.ts"],
+      permissionGate: "/role-controlled/gate.ts",
     } as AgentConfig;
     const prepared = await prepareAgentRun(
       { agent: role, task: "Review", cwd: "/workspace" },
-      { tempRoot, runtime: runtime(), resolveRadiusExtension: () => radiusPath },
+      prepareOptions({ tempRoot, resolveRadiusExtension: () => radiusPath }),
     );
 
-    expect(flagValue(prepared.args, "--extension")).toBe(radiusPath);
+    expect(flagValues(prepared.args, "--extension")).toEqual([GATE_PATH, radiusPath]);
     expect(prepared.args).not.toContain("/role-controlled/extension.ts");
     expect(prepared.args).not.toContain("/another/role-extension.ts");
+    expect(prepared.args).not.toContain("/role-controlled/gate.ts");
     await prepared.cleanup();
+  });
+
+  it("fails before creating a prompt when the gate cannot be resolved", async () => {
+    const tempRoot = await temporaryDirectory();
+    await expect(
+      prepareAgentRun(
+        { agent: agent(), task: "Implement behavior", cwd: "/workspace" },
+        prepareOptions({
+          tempRoot,
+          resolvePermissionGateExtension() {
+            throw new Error("Required permission-gate is missing. Install v0.4.0 with: pi install git:git@github.com:ronalson/pi-permission-gate@v0.4.0");
+          },
+        }),
+      ),
+    ).rejects.toThrow("Required permission-gate is missing");
+    expect(readdirSync(tempRoot)).toEqual([]);
+  });
+
+  it("fails before spawn when the current Pi entrypoint is unusable", async () => {
+    const tempRoot = await temporaryDirectory();
+    await expect(
+      prepareAgentRun(
+        { agent: agent(), task: "Implement behavior", cwd: "/workspace" },
+        prepareOptions({
+          tempRoot,
+          runtime: runtime({ execPath: "/usr/bin/node", argv: ["node"], exists: () => false }),
+        }),
+      ),
+    ).rejects.toThrow(PI_INVOCATION_ERROR);
+    expect(readdirSync(tempRoot)).toEqual([]);
   });
 });
 
@@ -432,6 +507,419 @@ describe("JsonlRunParser", () => {
     expect(progress.activeTools.map((tool) => tool.id)).not.toContain("tool-3");
     expect(progress.recentTools).toHaveLength(5);
     expect(progress.recentTools.map((tool) => tool.name)).toEqual(["grep", "read", "read", "read", "grep"]);
+  });
+
+  it("retains tool_execution_end isError on completed tools", () => {
+    const parser = new JsonlRunParser();
+    parser.writeStdout(sessionLine());
+    parser.writeStdout(
+      jsonl(
+        {
+          type: "tool_execution_start",
+          toolCallId: "blocked",
+          toolName: "bash",
+          args: { command: "rm secret" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "blocked",
+          toolName: "bash",
+          isError: true,
+          result: { content: [{ type: "text", text: "blocked" }] },
+        },
+        {
+          type: "tool_execution_start",
+          toolCallId: "ok",
+          toolName: "read",
+          args: { path: "src/auth.ts" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "ok",
+          toolName: "read",
+          isError: false,
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "unmatched",
+          toolName: "grep",
+          isError: true,
+        },
+      ),
+    );
+
+    expect(parser.snapshot().recentTools).toEqual([
+      { name: "bash", preview: expect.stringContaining("rm secret"), isError: true, errorPreview: "blocked" },
+      { name: "read", preview: expect.stringContaining("src/auth.ts"), isError: false },
+    ]);
+  });
+
+  it("treats missing or non-boolean isError as an ordinary error, not success or a gate block", () => {
+    const trailer = `Blocked by permission-gate: privilege escalation.\n${PERMISSION_GATE_BLOCK_MARKER}${JSON.stringify({
+      disposition: "denied_by_policy",
+      rules: ["bash.privilege_escalation"],
+    })}`;
+    const parser = new JsonlRunParser();
+    parser.writeStdout(sessionLine());
+    parser.writeStdout(
+      jsonl(
+        {
+          type: "tool_execution_start",
+          toolCallId: "missing",
+          toolName: "bash",
+          args: { command: "sudo true" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "missing",
+          toolName: "bash",
+          result: { content: [{ type: "text", text: trailer }] },
+        },
+        {
+          type: "tool_execution_start",
+          toolCallId: "string-true",
+          toolName: "bash",
+          args: { command: "sudo true" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "string-true",
+          toolName: "bash",
+          isError: "true",
+          result: { content: [{ type: "text", text: trailer }] },
+        },
+        {
+          type: "tool_execution_start",
+          toolCallId: "numeric",
+          toolName: "read",
+          args: { path: "src/auth.ts" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "numeric",
+          toolName: "read",
+          isError: 1,
+          result: { content: [{ type: "text", text: "failed" }] },
+        },
+      ),
+    );
+
+    const recent = parser.snapshot().recentTools;
+    expect(recent).toEqual([
+      {
+        name: "bash",
+        preview: expect.stringContaining("sudo true"),
+        isError: true,
+        errorPreview: expect.stringContaining("Blocked by permission-gate"),
+      },
+      {
+        name: "bash",
+        preview: expect.stringContaining("sudo true"),
+        isError: true,
+        errorPreview: expect.stringContaining("Blocked by permission-gate"),
+      },
+      { name: "read", preview: expect.stringContaining("src/auth.ts"), isError: true, errorPreview: "failed" },
+    ]);
+    expect(recent.every((tool) => tool.block === undefined)).toBe(true);
+    expect(parser.snapshot().reportedBlocks).toBeUndefined();
+  });
+
+  it("parses block trailers, strips display text, and aggregates independently of matching and recent eviction", () => {
+    const deny = `Blocked by permission-gate: privilege escalation.\n${PERMISSION_GATE_BLOCK_MARKER}${JSON.stringify({
+      disposition: "denied_by_policy",
+      rules: ["bash.privilege_escalation"],
+    })}`;
+    const confirm = `Blocked by permission-gate: confirmation required.\n${PERMISSION_GATE_BLOCK_MARKER}${JSON.stringify({
+      disposition: "confirmation_unavailable",
+      rules: ["bash.destructive_command"],
+    })}`;
+    const parser = new JsonlRunParser();
+    parser.writeStdout(sessionLine());
+    parser.writeStdout(
+      jsonl(
+        {
+          type: "tool_execution_end",
+          toolCallId: "unmatched-deny",
+          toolName: "bash",
+          isError: true,
+          result: { content: [{ type: "text", text: deny }] },
+        },
+        {
+          type: "tool_execution_start",
+          toolCallId: "spoof-ok",
+          toolName: "bash",
+          args: { command: "echo ok" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "spoof-ok",
+          toolName: "bash",
+          isError: false,
+          result: { content: [{ type: "text", text: deny }] },
+        },
+      ),
+    );
+
+    for (let index = 0; index < 6; index++) {
+      parser.writeStdout(
+        jsonl(
+          {
+            type: "tool_execution_start",
+            toolCallId: `block-${index}`,
+            toolName: "bash",
+            args: { command: `rm file-${index}` },
+          },
+          {
+            type: "tool_execution_end",
+            toolCallId: `block-${index}`,
+            toolName: "bash",
+            isError: true,
+            result: {
+              content: [{
+                type: "text",
+                text: index === 0 ? confirm : `Blocked by permission-gate: deny ${index}.\n${PERMISSION_GATE_BLOCK_MARKER}${JSON.stringify({
+                  disposition: "denied_by_policy",
+                  rules: [`bash.rule_${index}`],
+                })}`,
+              }],
+            },
+          },
+        ),
+      );
+    }
+
+    const progress = parser.snapshot();
+    expect(progress.recentTools).toHaveLength(5);
+    expect(progress.recentTools.every((tool) => tool.name !== undefined)).toBe(true);
+    expect(progress.recentTools.some((tool) => tool.block?.disposition === "confirmation_unavailable")).toBe(false);
+    expect(progress.reportedBlocks).toEqual({
+      deniedByPolicy: 6,
+      confirmationUnavailable: 1,
+      rules: [
+        "bash.privilege_escalation",
+        "bash.destructive_command",
+        "bash.rule_1",
+        "bash.rule_2",
+        "bash.rule_3",
+        "bash.rule_4",
+        "bash.rule_5",
+      ],
+      rulesOmitted: false,
+    });
+    expect(progress.recentTools.at(-1)?.block).toEqual({
+      disposition: "denied_by_policy",
+      rules: ["bash.rule_5"],
+    });
+    expect(progress.recentTools.at(-1)?.errorPreview).toBe("Blocked by permission-gate: deny 5.");
+    expect(progress.recentTools.at(-1)?.errorPreview).not.toContain(PERMISSION_GATE_BLOCK_MARKER);
+    expect(progress.recentTools.some((tool) => tool.errorPreview?.includes(PERMISSION_GATE_BLOCK_MARKER))).toBe(false);
+  });
+
+  it("keeps malformed, oversized, and successful spoofed trailers as ordinary tool errors", () => {
+    const parser = new JsonlRunParser();
+    parser.writeStdout(sessionLine());
+    parser.writeStdout(
+      jsonl(
+        {
+          type: "tool_execution_start",
+          toolCallId: "ordinary",
+          toolName: "bash",
+          args: { command: "false" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "ordinary",
+          toolName: "bash",
+          isError: true,
+          result: { content: [{ type: "text", text: "exit 1" }] },
+        },
+        {
+          type: "tool_execution_start",
+          toolCallId: "malformed",
+          toolName: "bash",
+          args: { command: "rm x" },
+        },
+        {
+          type: "tool_execution_end",
+          toolCallId: "malformed",
+          toolName: "bash",
+          isError: true,
+          result: {
+            content: [{
+              type: "text",
+              text: `Blocked.\n${PERMISSION_GATE_BLOCK_MARKER}{not json}`,
+            }],
+          },
+        },
+      ),
+    );
+
+    const progress = parser.snapshot();
+    expect(progress.reportedBlocks).toBeUndefined();
+    expect(progress.recentTools.map((tool) => tool.block)).toEqual([undefined, undefined]);
+    expect(progress.recentTools[0]?.isError).toBe(true);
+    expect(progress.recentTools[0]?.errorPreview).toBe("exit 1");
+  });
+
+  it("tracks streaming text activity without exposing thinking or replacing final output", () => {
+    let now = 1000;
+    const parser = new JsonlRunParser({ startedAt: 1000, now: () => now });
+    parser.writeStdout(sessionLine());
+    parser.writeStdout(jsonl({ type: "message_start", message: { role: "assistant", content: [] } }));
+    parser.writeStdout(
+      jsonl({
+        type: "message_update",
+        assistantMessageEvent: { type: "thinking_start", contentIndex: 0 },
+      }),
+    );
+    parser.writeStdout(
+      jsonl({
+        type: "message_update",
+        assistantMessageEvent: { type: "thinking_delta", contentIndex: 0, delta: "secret chain of thought" },
+      }),
+    );
+    parser.writeStdout(
+      jsonl({
+        type: "message_update",
+        assistantMessageEvent: { type: "thinking_end", contentIndex: 0, content: "secret chain of thought" },
+      }),
+    );
+
+    const progress = parser.snapshot();
+    expect(progress.generating).toBe(true);
+    expect(progress.lastTextPreview).toBeUndefined();
+    expect(JSON.stringify(progress)).not.toContain("secret chain of thought");
+    expect(parser.finish().output).toBe("");
+
+    const streaming = new JsonlRunParser({ startedAt: 1000, now: () => now });
+    streaming.writeStdout(sessionLine());
+    streaming.writeStdout(jsonl({ type: "message_start", message: { role: "assistant", content: [] } }));
+    streaming.writeStdout(
+      jsonl({
+        type: "message_update",
+        assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "Partial " },
+      }),
+    );
+    expect(streaming.snapshot()).toMatchObject({
+      generating: true,
+      lastTextPreview: "Partial ",
+      lastActivityAgoMs: 0,
+    });
+    expect(streaming.finish().output).toBe("");
+
+    const complete = new JsonlRunParser({ startedAt: 1000, now: () => now });
+    complete.writeStdout(sessionLine());
+    complete.writeStdout(jsonl({ type: "message_start", message: { role: "assistant", content: [] } }));
+    complete.writeStdout(
+      jsonl({
+        type: "message_update",
+        assistantMessageEvent: { type: "thinking_delta", delta: "hidden reasoning" },
+      }),
+    );
+    complete.writeStdout(
+      jsonl({
+        type: "message_update",
+        assistantMessageEvent: { type: "text_delta", delta: "Draft" },
+      }),
+    );
+    now = 2500;
+    expect(complete.snapshot()).toMatchObject({
+      durationMs: 1500,
+      lastActivityAgoMs: 1500,
+      lastTextPreview: "Draft",
+      generating: true,
+    });
+    now = 2600;
+    complete.writeStdout(
+      jsonl({
+        type: "tool_execution_update",
+        toolCallId: "tool-1",
+        toolName: "bash",
+        partialResult: { content: [{ type: "text", text: "running" }] },
+      }),
+    );
+    expect(complete.snapshot().lastActivityAgoMs).toBe(0);
+    complete.writeStdout(
+      jsonl(
+        assistantEvent({
+          content: [
+            { type: "thinking", thinking: "hidden reasoning" },
+            { type: "text", text: "Final answer" },
+          ],
+        }),
+      ),
+    );
+
+    const result = complete.finish();
+    expect(result.output).toBe("Final answer");
+    expect(result.progress.lastTextPreview).toBe("Final answer");
+    expect(result.progress.generating).toBe(false);
+    expect(result.output).not.toContain("hidden reasoning");
+    expect(result.progress.lastTextPreview).not.toContain("hidden reasoning");
+  });
+
+  it("does not claim generation for non-assistant message_start or message_end", () => {
+    const parser = new JsonlRunParser();
+    parser.writeStdout(sessionLine());
+    parser.writeStdout(
+      jsonl({
+        type: "message_start",
+        message: { role: "user", content: [{ type: "text", text: "Delegated task:\nInspect auth" }] },
+      }),
+    );
+    expect(parser.snapshot()).toMatchObject({ generating: false, turns: 0 });
+    expect(parser.snapshot().lastTextPreview).toBeUndefined();
+
+    parser.writeStdout(
+      jsonl({
+        type: "message_end",
+        message: { role: "user", content: [{ type: "text", text: "Delegated task:\nInspect auth" }] },
+      }),
+    );
+    expect(parser.snapshot()).toMatchObject({ generating: false, turns: 0 });
+    expect(parser.snapshot().lastTextPreview).toBeUndefined();
+
+    parser.writeStdout(
+      jsonl({
+        type: "message_start",
+        message: { role: "system", content: "Internal instructions" },
+      }),
+    );
+    parser.writeStdout(
+      jsonl({
+        type: "message_end",
+        message: { role: "system", content: "Internal instructions" },
+      }),
+    );
+    expect(parser.snapshot()).toMatchObject({ generating: false, turns: 0 });
+
+    parser.writeStdout(jsonl({ type: "message_start" }));
+    parser.writeStdout(jsonl({ type: "message_end", message: "not-a-record" }));
+    expect(parser.snapshot().generating).toBe(false);
+    expect(parser.snapshot().turns).toBe(0);
+
+    parser.writeStdout(jsonl({ type: "message_start", message: { role: "assistant", content: [] } }));
+    expect(parser.snapshot().generating).toBe(true);
+  });
+
+  it("bounds the streaming text accumulator across multiple deltas", () => {
+    const parser = new JsonlRunParser();
+    parser.writeStdout(sessionLine());
+    parser.writeStdout(jsonl({ type: "message_start", message: { role: "assistant", content: [] } }));
+    for (let index = 0; index < 10; index++) {
+      parser.writeStdout(
+        jsonl({
+          type: "message_update",
+          assistantMessageEvent: { type: "text_delta", delta: `chunk-${index}-${"🌍".repeat(40)}` },
+        }),
+      );
+    }
+
+    const progress = parser.snapshot();
+    expect(progress.generating).toBe(true);
+    expect(Buffer.byteLength(progress.lastTextPreview ?? "")).toBeLessThanOrEqual(512);
+    expect(progress.lastTextPreview).not.toContain("�");
+    expect(Buffer.byteLength((parser as unknown as { streamingText: string }).streamingText)).toBeLessThanOrEqual(512);
   });
 
   it("uses the latest non-empty assistant text and bounds its preview", () => {
@@ -587,6 +1075,14 @@ describe("usage and output accounting", () => {
     expect(byLines.split("\n")).toHaveLength(2000);
     expect(byLines).toContain("of 2500 lines");
   });
+
+  it("reserves a generated suffix so truncation cannot remove it", () => {
+    const suffix = "Reported blocks: 1 policy denial. Blocked attempts did not complete; related work remains unresolved unless completed independently.";
+    const bounded = boundOutputReservingSuffix("x".repeat(60 * 1024), suffix);
+    expect(bounded.endsWith(suffix)).toBe(true);
+    expect(bounded).toContain("[Output truncated:");
+    expect(Buffer.byteLength(bounded)).toBeLessThanOrEqual(50 * 1024);
+  });
 });
 
 class FakeChild extends EventEmitter implements ChildProcessLike {
@@ -632,6 +1128,39 @@ function fakeSpawn(child: FakeChild): ReturnType<typeof vi.fn<SpawnChild>> {
   return vi.fn<SpawnChild>(() => child);
 }
 
+function interceptHeartbeats(): { fire(): void; state: { started: number; cleared: number } } {
+  const originalSetInterval = globalThis.setInterval;
+  const originalClearInterval = globalThis.clearInterval;
+  const handlers = new Map<unknown, () => void>();
+  const state = { started: 0, cleared: 0 };
+
+  vi.spyOn(globalThis, "setInterval").mockImplementation(((handler: (...handlerArgs: unknown[]) => void, delay?: number, ...args: unknown[]) => {
+    if (delay === 1000) {
+      state.started++;
+      const token = { id: state.started };
+      handlers.set(token, () => handler(...args));
+      return token as unknown as ReturnType<typeof setInterval>;
+    }
+    return originalSetInterval(handler, delay, ...args);
+  }) as typeof setInterval);
+
+  vi.spyOn(globalThis, "clearInterval").mockImplementation(((token: unknown) => {
+    if (handlers.has(token)) {
+      state.cleared++;
+      handlers.delete(token);
+      return;
+    }
+    originalClearInterval(token as ReturnType<typeof setInterval>);
+  }) as typeof clearInterval);
+
+  return {
+    state,
+    fire() {
+      for (const handler of handlers.values()) handler();
+    },
+  };
+}
+
 async function waitForSpawn(spawn: ReturnType<typeof vi.fn<SpawnChild>>): Promise<void> {
   await vi.waitFor(() => expect(spawn).toHaveBeenCalledOnce());
 }
@@ -653,12 +1182,12 @@ describe("runAgent process lifecycle", () => {
     const spawn = fakeSpawn(child);
     const progress = vi.fn();
     const request = runRequest();
-    const promise = runAgent(request, { tempRoot, runtime: runtime(), spawn, onProgress: progress });
+    const promise = runAgent(request, { tempRoot, ...prepareOptions(), spawn, onProgress: progress });
 
     await waitForSpawn(spawn);
     expect(spawn).toHaveBeenCalledWith(
       "/usr/bin/node",
-      expect.arrayContaining(["/opt/pi/cli.js", "--mode", "json"]),
+      expect.arrayContaining(["/opt/pi/cli.js", "--mode", "json", "--no-extensions", "--extension", GATE_PATH]),
       { cwd: request.cwd, shell: false, stdio: ["pipe", "pipe", "pipe"] },
     );
     expect(child.stdinText).toBe(`Delegated task:\n${request.task}`);
@@ -681,7 +1210,7 @@ describe("runAgent process lifecycle", () => {
     const tempRoot = await temporaryDirectory();
     const child = new FakeChild();
     const spawn = fakeSpawn(child);
-    const promise = runAgent(runRequest(), { tempRoot, runtime: runtime(), spawn });
+    const promise = runAgent(runRequest(), { tempRoot, ...prepareOptions(), spawn });
 
     await waitForSpawn(spawn);
     child.stdout.write(sessionLine());
@@ -699,7 +1228,7 @@ describe("runAgent process lifecycle", () => {
     const oversizedSpawn = fakeSpawn(oversizedChild);
     const oversizedPromise = runAgent(runRequest(), {
       tempRoot,
-      runtime: runtime(),
+      ...prepareOptions(),
       spawn: oversizedSpawn,
     });
     await waitForSpawn(oversizedSpawn);
@@ -721,7 +1250,7 @@ describe("runAgent process lifecycle", () => {
       throw error;
     };
 
-    const result = await runAgent(runRequest(), { tempRoot, runtime: runtime(), spawn });
+    const result = await runAgent(runRequest(), { tempRoot, ...prepareOptions(), spawn });
     expect(result).toMatchObject({ status: "failed", error: expected });
     expect(readdirSync(tempRoot)).toEqual([]);
   });
@@ -730,7 +1259,7 @@ describe("runAgent process lifecycle", () => {
     const tempRoot = await temporaryDirectory();
     const child = new FakeChild();
     const spawn = fakeSpawn(child);
-    const promise = runAgent(runRequest(), { tempRoot, runtime: runtime(), spawn });
+    const promise = runAgent(runRequest(), { tempRoot, ...prepareOptions(), spawn });
 
     await waitForSpawn(spawn);
     child.fail(Object.assign(new Error("not found"), { code: "ENOENT" }));
@@ -743,6 +1272,25 @@ describe("runAgent process lifecycle", () => {
     expect(readdirSync(tempRoot)).toEqual([]);
   });
 
+  it("does not spawn when the gate cannot be resolved", async () => {
+    const tempRoot = await temporaryDirectory();
+    const spawn = fakeSpawn(new FakeChild());
+
+    await expect(
+      runAgent(runRequest(), {
+        tempRoot,
+        ...prepareOptions({
+          resolvePermissionGateExtension() {
+            throw new Error("Required permission-gate is missing");
+          },
+        }),
+        spawn,
+      }),
+    ).rejects.toThrow("Required permission-gate is missing");
+    expect(spawn).not.toHaveBeenCalled();
+    expect(readdirSync(tempRoot)).toEqual([]);
+  });
+
   it("does not spawn when already aborted", async () => {
     const tempRoot = await temporaryDirectory();
     const controller = new AbortController();
@@ -751,7 +1299,7 @@ describe("runAgent process lifecycle", () => {
 
     const result = await runAgent(runRequest(), {
       tempRoot,
-      runtime: runtime(),
+      ...prepareOptions(),
       spawn,
       signal: controller.signal,
     });
@@ -770,7 +1318,7 @@ describe("runAgent process lifecycle", () => {
     const spawn = fakeSpawn(child);
     const promise = runAgent(runRequest(), {
       tempRoot,
-      runtime: runtime(),
+      ...prepareOptions(),
       spawn,
       signal: controller.signal,
     });
@@ -798,7 +1346,7 @@ describe("runAgent process lifecycle", () => {
     const spawn = fakeSpawn(child);
     const promise = runAgent(runRequest(), {
       tempRoot,
-      runtime: runtime(),
+      ...prepareOptions(),
       spawn,
       signal: controller.signal,
       killGraceMs: 5000,
@@ -821,7 +1369,7 @@ describe("runAgent process lifecycle", () => {
     const tempRoot = await temporaryDirectory();
     const child = new FakeChild();
     const spawn = fakeSpawn(child);
-    const promise = runAgent(runRequest(), { tempRoot, runtime: runtime(), spawn });
+    const promise = runAgent(runRequest(), { tempRoot, ...prepareOptions(), spawn });
 
     await waitForSpawn(spawn);
     child.stdout.write(`${sessionLine()}${jsonl(assistantEvent())}`);
@@ -831,5 +1379,197 @@ describe("runAgent process lifecycle", () => {
       status: "failed",
       error: "Child process exited due to signal SIGTERM",
     });
+  });
+});
+
+describe("runAgent heartbeats", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("emits a one-second heartbeat that does not reset observed activity", async () => {
+    const heartbeats = interceptHeartbeats();
+    const tempRoot = await temporaryDirectory();
+    const child = new FakeChild();
+    const spawn = fakeSpawn(child);
+    let now = 1000;
+    const progress = vi.fn();
+    const promise = runAgent(runRequest(), {
+      tempRoot,
+      ...prepareOptions(),
+      spawn,
+      now: () => now,
+      onProgress: progress,
+    });
+
+    await waitForSpawn(spawn);
+    expect(heartbeats.state.started).toBe(1);
+    expect(progress.mock.calls.at(-1)?.[0]).toMatchObject({ status: "running", generating: false });
+    expect(progress.mock.calls.at(-1)?.[0]).not.toHaveProperty("lastActivityAgoMs");
+
+    child.stdout.write(sessionLine());
+    expect(progress.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "running",
+      lastActivityAgoMs: 0,
+    });
+
+    now = 3500;
+    heartbeats.fire();
+    expect(progress.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "running",
+      durationMs: 2500,
+      lastActivityAgoMs: 2500,
+    });
+
+    emitSuccessfulRun(child);
+    expect((await promise).status).toBe("succeeded");
+    expect(heartbeats.state.cleared).toBe(1);
+
+    const calls = progress.mock.calls.length;
+    heartbeats.fire();
+    expect(progress.mock.calls.length).toBe(calls);
+  });
+
+  it("does not start a heartbeat when spawn throws", async () => {
+    const heartbeats = interceptHeartbeats();
+    const tempRoot = await temporaryDirectory();
+    const spawn: SpawnChild = () => {
+      throw Object.assign(new Error("spawn failed"), { code: "ENOENT" });
+    };
+
+    const result = await runAgent(runRequest(), { tempRoot, ...prepareOptions(), spawn });
+    expect(result).toMatchObject({ status: "failed", error: "Pi executable could not be resolved" });
+    expect(heartbeats.state.started).toBe(0);
+    expect(heartbeats.state.cleared).toBe(0);
+    expect(readdirSync(tempRoot)).toEqual([]);
+  });
+
+  it("does not start a heartbeat if termination already began", async () => {
+    const heartbeats = interceptHeartbeats();
+    const tempRoot = await temporaryDirectory();
+    const controller = new AbortController();
+    const child = new FakeChild();
+    const spawn = fakeSpawn(child);
+    const progress = vi.fn((update: { status: string }) => {
+      if (update.status === "running" && !controller.signal.aborted) controller.abort();
+    });
+    const promise = runAgent(runRequest(), {
+      tempRoot,
+      ...prepareOptions(),
+      spawn,
+      signal: controller.signal,
+      onProgress: progress,
+    });
+
+    await waitForSpawn(spawn);
+    expect(child.signals).toEqual(["SIGTERM"]);
+    expect(heartbeats.state.started).toBe(0);
+    expect(heartbeats.state.cleared).toBe(0);
+
+    const calls = progress.mock.calls.length;
+    expect(progress.mock.calls.at(-1)?.[0].status).toBe("running");
+    heartbeats.fire();
+    expect(progress.mock.calls.length).toBe(calls);
+
+    child.close(null, "SIGTERM");
+    expect((await promise).status).toBe("cancelled");
+    expect(progress.mock.calls.at(-1)?.[0].status).toBe("cancelled");
+    expect(readdirSync(tempRoot)).toEqual([]);
+  });
+
+  it.each([
+    {
+      label: "cancellation",
+      failInput: false,
+      trigger(child: FakeChild, controller: AbortController) {
+        controller.abort();
+        expect(child.signals).toEqual(["SIGTERM"]);
+      },
+      close(child: FakeChild) {
+        child.close(null, "SIGTERM");
+      },
+      expected: { status: "cancelled", error: "Subagent cancelled" },
+    },
+    {
+      label: "protocol failure",
+      failInput: false,
+      trigger(child: FakeChild) {
+        child.stdout.write("x".repeat(1024 * 1024 + 1));
+        expect(child.signals).toEqual(["SIGTERM"]);
+      },
+      close(child: FakeChild) {
+        child.close(null, "SIGTERM");
+      },
+      expected: { status: "failed" },
+    },
+    {
+      label: "emitted spawn error",
+      failInput: false,
+      trigger(child: FakeChild) {
+        child.fail(Object.assign(new Error("not found"), { code: "ENOENT" }));
+      },
+      close(child: FakeChild) {
+        child.close(-2);
+      },
+      expected: { status: "failed", error: "Pi executable could not be resolved" },
+    },
+    {
+      label: "input failure",
+      failInput: true,
+      trigger(child: FakeChild) {
+        expect(child.signals).toEqual(["SIGTERM"]);
+      },
+      close(child: FakeChild) {
+        child.close(1);
+      },
+      expected: { status: "failed" },
+    },
+  ])("stops nonterminal progress on $label before close", async ({ failInput, trigger, close, expected }) => {
+    const heartbeats = interceptHeartbeats();
+    const tempRoot = await temporaryDirectory();
+    const controller = new AbortController();
+    const child = new FakeChild();
+    if (failInput) {
+      child.stdin.end = (() => {
+        throw new Error("broken pipe");
+      }) as typeof child.stdin.end;
+    }
+    const spawn = fakeSpawn(child);
+    const progress = vi.fn();
+    const promise = runAgent(runRequest(), {
+      tempRoot,
+      ...prepareOptions(),
+      spawn,
+      signal: controller.signal,
+      onProgress: progress,
+    });
+
+    await waitForSpawn(spawn);
+    trigger(child, controller);
+
+    if (failInput) {
+      expect(heartbeats.state.started).toBe(0);
+      expect(heartbeats.state.cleared).toBe(0);
+    } else {
+      expect(heartbeats.state.started).toBe(1);
+      expect(heartbeats.state.cleared).toBe(1);
+    }
+
+    const calls = progress.mock.calls.length;
+    expect(calls).toBeGreaterThan(0);
+    expect(progress.mock.calls.at(-1)?.[0].status).toBe("running");
+    heartbeats.fire();
+    expect(progress.mock.calls.length).toBe(calls);
+
+    close(child);
+    const result = await promise;
+    expect(result).toMatchObject(expected);
+    expect(progress.mock.calls.at(-1)?.[0].status).toBe(expected.status);
+    expect(readdirSync(tempRoot)).toEqual([]);
+
+    const afterClose = progress.mock.calls.length;
+    heartbeats.fire();
+    expect(progress.mock.calls.length).toBe(afterClose);
   });
 });

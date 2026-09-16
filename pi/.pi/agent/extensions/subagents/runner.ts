@@ -12,7 +12,22 @@ import {
   truncateHead,
 } from "@earendil-works/pi-coding-agent";
 import type { AgentConfig, ThinkingLevel } from "./agents.ts";
-import { RADIUS_WEB_SEARCH_TOOL, resolveRadiusWebSearchExtension } from "./agents.ts";
+import {
+  RADIUS_WEB_SEARCH_TOOL,
+  resolvePermissionGateExtension,
+  resolveRadiusWebSearchExtension,
+} from "./agents.ts";
+import {
+  boundErrorPreview,
+  joinToolResultText,
+  parsePermissionGateBlockFromEndEvent,
+  ReportedBlockAggregator,
+  type PermissionGateBlockMetadata,
+  type ReportedBlocks,
+} from "./permission-gate-block.ts";
+
+export const PI_INVOCATION_ERROR =
+  "Could not resolve a known Pi entrypoint for subagent spawn. Use the current valid script and runtime, or the current standalone executable. The unvalidated PATH `pi` fallback is not used.";
 
 const RADIUS_ROLES = new Set(["scout", "reviewer"]);
 
@@ -47,6 +62,7 @@ export interface PreparedRun extends PiInvocation {
 export interface PrepareRunOptions {
   runtime?: PiRuntime;
   tempRoot?: string;
+  resolvePermissionGateExtension?: () => string;
   resolveRadiusExtension?: () => string;
 }
 
@@ -79,13 +95,17 @@ interface ChildArgumentOptions {
   parentModel?: string;
   parentThinking?: ThinkingLevel;
   promptPath: string;
+  permissionGateExtensionPath: string;
   radiusExtensionPath?: string;
 }
 
 export function buildChildArguments(options: ChildArgumentOptions): string[] {
-  const { agent, parentModel, parentThinking, promptPath, radiusExtensionPath } = options;
+  const { agent, parentModel, parentThinking, promptPath, permissionGateExtensionPath, radiusExtensionPath } = options;
   const usesRadius = agent.tools.includes(RADIUS_WEB_SEARCH_TOOL);
 
+  if (!permissionGateExtensionPath) {
+    throw new Error("Subagent children require the permission-gate extension");
+  }
   if (usesRadius && !RADIUS_ROLES.has(agent.name)) {
     throw new Error(`'${RADIUS_WEB_SEARCH_TOOL}' is allowed only for scout and reviewer`);
   }
@@ -107,6 +127,8 @@ export function buildChildArguments(options: ChildArgumentOptions): string[] {
     "--no-approve",
     "--tools",
     agent.tools.join(","),
+    "--extension",
+    permissionGateExtensionPath,
   ];
 
   if (radiusExtensionPath) {
@@ -149,7 +171,7 @@ export function resolvePiInvocation(
     return { command: runtime.execPath, args: [...childArgs] };
   }
 
-  return { command: "pi", args: [...childArgs] };
+  throw new Error(PI_INVOCATION_ERROR);
 }
 
 async function createPromptFile(systemPrompt: string, tempRoot: string): Promise<{
@@ -173,6 +195,7 @@ export async function prepareAgentRun(
   request: RunRequest,
   options: PrepareRunOptions = {},
 ): Promise<PreparedRun> {
+  const permissionGateExtensionPath = (options.resolvePermissionGateExtension ?? resolvePermissionGateExtension)();
   const usesRadius = request.agent.tools.includes(RADIUS_WEB_SEARCH_TOOL);
   const radiusExtensionPath = usesRadius
     ? (options.resolveRadiusExtension ?? resolveRadiusWebSearchExtension)()
@@ -185,6 +208,7 @@ export async function prepareAgentRun(
       parentModel: request.parentModel,
       parentThinking: request.parentThinking,
       promptPath: prompt.path,
+      permissionGateExtensionPath,
       radiusExtensionPath,
     });
     const invocation = resolvePiInvocation(childArgs, options.runtime);
@@ -227,15 +251,28 @@ export interface ToolProgress {
   preview: string;
 }
 
+export interface RecentToolProgress {
+  name: string;
+  preview: string;
+  isError: boolean;
+  block?: PermissionGateBlockMetadata;
+  errorPreview?: string;
+}
+
+export type { PermissionGateBlockMetadata, ReportedBlocks };
+
 export interface RunProgress {
   status: RunStatus;
   activeTools: ToolProgress[];
   activeToolOverflow: number;
-  recentTools: Array<{ name: string; preview: string }>;
+  recentTools: RecentToolProgress[];
   lastTextPreview?: string;
   toolCalls: number;
   turns: number;
   durationMs: number;
+  lastActivityAgoMs?: number;
+  generating: boolean;
+  reportedBlocks?: ReportedBlocks;
 }
 
 export interface RunResult {
@@ -410,6 +447,48 @@ export function boundFinalOutput(output: string): string {
   }).content;
 }
 
+function countLines(value: string): number {
+  if (value === "") return 0;
+  return value.split(/\r?\n/).length;
+}
+
+export function boundOutputReservingSuffix(
+  output: string,
+  suffix: string,
+  maxBytes = DEFAULT_MAX_BYTES,
+  maxLines = DEFAULT_MAX_LINES,
+): string {
+  const trimmedSuffix = suffix.trim();
+  if (trimmedSuffix === "") {
+    return truncateHead(output, { maxBytes, maxLines }).content;
+  }
+
+  const suffixPart = output.trim() === "" ? trimmedSuffix : `\n\n${trimmedSuffix}`;
+  const suffixBytes = Buffer.byteLength(suffixPart, "utf8");
+  const suffixLines = countLines(suffixPart);
+  const headMaxBytes = Math.max(1, maxBytes - suffixBytes);
+  const headMaxLines = Math.max(1, maxLines - suffixLines);
+
+  const truncation = truncateHead(output, {
+    maxBytes: Math.max(1, headMaxBytes - OUTPUT_NOTICE_RESERVE_BYTES),
+    maxLines: Math.max(1, headMaxLines - OUTPUT_NOTICE_RESERVE_LINES),
+  });
+
+  let head = output;
+  if (truncation.truncated) {
+    const notice = `[Output truncated: showing ${truncation.outputBytes} of ${truncation.totalBytes} bytes and ${truncation.outputLines} of ${truncation.totalLines} lines.]`;
+    const combined = truncation.content ? `${truncation.content}\n\n${notice}` : notice;
+    head = truncateHead(combined, { maxBytes: headMaxBytes, maxLines: headMaxLines }).content;
+  } else if (
+    Buffer.byteLength(output, "utf8") + suffixBytes > maxBytes
+    || countLines(output) + countLines(suffixPart) - (output.endsWith("\n") || suffixPart.startsWith("\n") ? 1 : 0) > maxLines
+  ) {
+    head = truncateHead(output, { maxBytes: headMaxBytes, maxLines: headMaxLines }).content;
+  }
+
+  return `${head}${suffixPart}`;
+}
+
 function stderrText(buffer: Buffer): string {
   let offset = 0;
   while (offset < buffer.length && (buffer[offset] & 0xc0) === 0x80) offset++;
@@ -433,11 +512,15 @@ export class JsonlRunParser {
   private readonly malformedLineSamples: string[] = [];
   private readonly activeTools = new Map<string, ToolProgress>();
   private activeToolOverflow = 0;
-  private readonly recentTools: Array<{ name: string; preview: string }> = [];
+  private readonly recentTools: RecentToolProgress[] = [];
   private lastTextPreview?: string;
   private toolCalls = 0;
   private turns = 0;
+  private lastObservedActivityAt?: number;
+  private generating = false;
+  private streamingText = "";
   private stderr = Buffer.alloc(0);
+  private readonly reportedBlocks = new ReportedBlockAggregator();
 
   constructor(options: JsonlParserOptions = {}) {
     this.now = options.now ?? Date.now;
@@ -463,15 +546,25 @@ export class JsonlRunParser {
   }
 
   snapshot(status: RunStatus = "running"): RunProgress {
+    const now = this.now();
+    const reportedBlocks = this.reportedBlocks.snapshot();
     return {
       status,
       activeTools: [...this.activeTools.values()].map((tool) => ({ ...tool })),
       activeToolOverflow: this.activeToolOverflow,
-      recentTools: this.recentTools.map((tool) => ({ ...tool })),
+      recentTools: this.recentTools.map((tool) => ({
+        ...tool,
+        ...(tool.block ? { block: { ...tool.block, rules: [...tool.block.rules] } } : {}),
+      })),
       ...(this.lastTextPreview === undefined ? {} : { lastTextPreview: this.lastTextPreview }),
       toolCalls: this.toolCalls,
       turns: this.turns,
-      durationMs: Math.max(0, this.now() - this.startedAt),
+      durationMs: Math.max(0, now - this.startedAt),
+      ...(this.lastObservedActivityAt === undefined
+        ? {}
+        : { lastActivityAgoMs: Math.max(0, now - this.lastObservedActivityAt) }),
+      generating: status === "running" && this.generating,
+      ...(reportedBlocks === undefined ? {} : { reportedBlocks }),
     };
   }
 
@@ -564,7 +657,13 @@ export class JsonlRunParser {
     this.protocolError = `child JSONL record exceeded ${MAX_JSONL_RECORD_BYTES} bytes`;
   }
 
+  private markActivity(): void {
+    this.lastObservedActivityAt = this.now();
+  }
+
   private processEvent(event: Record<string, unknown>): void {
+    this.markActivity();
+
     if (isSessionRecord(event)) {
       this.sessionSeen = true;
       return;
@@ -586,8 +685,15 @@ export class JsonlRunParser {
       return;
     }
 
+    if (event.type === "tool_execution_update") {
+      return;
+    }
+
     if (event.type === "tool_execution_end") {
+      const parsedBlock = parsePermissionGateBlockFromEndEvent(event);
+      if (parsedBlock) this.reportedBlocks.record(parsedBlock.metadata);
       if (typeof event.toolCallId !== "string") return;
+
       let completed = this.activeTools.get(event.toolCallId);
       if (completed) {
         this.activeTools.delete(event.toolCallId);
@@ -600,9 +706,35 @@ export class JsonlRunParser {
         };
       }
       if (completed) {
-        this.recentTools.push({ name: completed.name, preview: completed.preview });
+        const isSuccess = event.isError === false;
+        const recent: RecentToolProgress = {
+          name: completed.name,
+          preview: completed.preview,
+          isError: !isSuccess,
+        };
+        if (!isSuccess) {
+          const display = parsedBlock?.displayText ?? joinToolResultText(event.result) ?? "";
+          const errorPreview = boundErrorPreview(display);
+          if (parsedBlock) recent.block = { ...parsedBlock.metadata, rules: [...parsedBlock.metadata.rules] };
+          if (errorPreview) recent.errorPreview = errorPreview;
+        }
+        this.recentTools.push(recent);
         if (this.recentTools.length > MAX_RECENT_TOOLS) this.recentTools.shift();
       }
+      return;
+    }
+
+    if (event.type === "message_start") {
+      if (isRecord(event.message) && event.message.role === "assistant") {
+        this.generating = true;
+        this.streamingText = "";
+      }
+      return;
+    }
+
+    if (event.type === "message_update") {
+      this.generating = true;
+      this.consumeMessageUpdate(event);
       return;
     }
 
@@ -610,6 +742,8 @@ export class JsonlRunParser {
       return;
     }
 
+    this.generating = false;
+    this.streamingText = "";
     const message = event.message;
     this.turns++;
     this.usage = aggregateUsage([this.usage, usageFrom(message.usage)]);
@@ -630,9 +764,21 @@ export class JsonlRunParser {
       this.lastTextPreview = truncateUtf8(text, MAX_PREVIEW_BYTES);
     }
   }
+
+  private consumeMessageUpdate(event: Record<string, unknown>): void {
+    const update = isRecord(event.assistantMessageEvent) ? event.assistantMessageEvent : undefined;
+    if (!update || typeof update.type !== "string") return;
+    if (update.type.startsWith("thinking_")) return;
+    if (update.type !== "text_delta" || typeof update.delta !== "string") return;
+    this.streamingText = truncateUtf8(this.streamingText + update.delta, MAX_PREVIEW_BYTES);
+    if (this.streamingText.trim() !== "") {
+      this.lastTextPreview = this.streamingText;
+    }
+  }
 }
 
 const DEFAULT_KILL_GRACE_MS = 5000;
+const HEARTBEAT_INTERVAL_MS = 1000;
 const MAX_ERROR_BYTES = 4096;
 const MAX_TASK_PREVIEW_BYTES = 240;
 
@@ -660,6 +806,7 @@ function initialProgress(status: RunStatus, startedAt: number, now: () => number
     toolCalls: 0,
     turns: 0,
     durationMs: Math.max(0, now() - startedAt),
+    generating: false,
   };
 }
 
@@ -774,11 +921,30 @@ export async function runAgent(request: RunRequest, options: RunOptions = {}): P
       let spawnError: (Error & { code?: string }) | undefined;
       let inputError: Error | undefined;
       let escalationTimer: ReturnType<typeof setTimeout> | undefined;
+      let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
       let terminationStarted = false;
+      let progressStopped = false;
+
+      const stopHeartbeat = () => {
+        if (heartbeatTimer === undefined) return;
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = undefined;
+      };
+
+      const stopProgress = () => {
+        progressStopped = true;
+        stopHeartbeat();
+      };
+
+      const emitRunningProgress = () => {
+        if (closed || progressStopped) return;
+        emitProgress(options.onProgress, parser.snapshot("running"));
+      };
 
       const terminate = () => {
         if (terminationStarted) return;
         terminationStarted = true;
+        stopProgress();
         try {
           child.kill("SIGTERM");
         } catch {
@@ -803,8 +969,8 @@ export async function runAgent(request: RunRequest, options: RunOptions = {}): P
 
       child.stdout.on("data", (chunk: Buffer | string) => {
         parser.writeStdout(chunk);
-        emitProgress(options.onProgress, parser.snapshot("running"));
         if (parser.hasProtocolError()) terminate();
+        else emitRunningProgress();
       });
       child.stderr.on("data", (chunk: Buffer | string) => parser.writeStderr(chunk));
       child.stdin.on("error", (error: Error) => {
@@ -813,9 +979,11 @@ export async function runAgent(request: RunRequest, options: RunOptions = {}): P
       });
       child.once("error", (error) => {
         spawnError = error;
+        stopProgress();
       });
       child.once("close", (code, closeSignal) => {
         closed = true;
+        stopHeartbeat();
         if (escalationTimer) clearTimeout(escalationTimer);
         signal?.removeEventListener("abort", abort);
         resolve({ code, signal: closeSignal, spawnError, inputError, cancelled });
@@ -829,6 +997,12 @@ export async function runAgent(request: RunRequest, options: RunOptions = {}): P
       } catch (error) {
         inputError = error instanceof Error ? error : new Error(String(error));
         terminate();
+      }
+
+      if (!progressStopped && !closed) {
+        heartbeatTimer = setInterval(() => {
+          emitRunningProgress();
+        }, HEARTBEAT_INTERVAL_MS);
       }
     });
 

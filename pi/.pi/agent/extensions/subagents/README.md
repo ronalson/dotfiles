@@ -23,6 +23,12 @@ From the dotfiles repository root:
 
 Restart Pi, or `/reload` after changing the extension or a role file.
 
+Every child loads permission-gate `v0.4.0` explicitly. Install it before delegating:
+
+```sh
+pi install git:git@github.com:ronalson/pi-permission-gate@v0.4.0
+```
+
 Scout and reviewer need Radius web search:
 
 ```sh
@@ -47,6 +53,9 @@ Advisor answers a prepared packet; it must not survey the repo. Do not use it fo
 ## Behavior
 
 - Children run in the parent working directory with no session, no discovered extensions, skills, or prompt templates, and no project Pi settings. Repository context files still load. Children cannot load this extension.
+- Every child is started with `--no-extensions --extension <permission-gate/index.ts>`. Scout and reviewer add a second `--extension` for Radius. Extension discovery stays off.
+- Permission-gate still allows routine workspace `write`/`edit` and ordinary test commands. In JSON/headless children there is no approval UI, so confirmation-required actions such as ordinary `rm` are blocked with `confirmation_unavailable`. Deny rules still block. Valid block metadata is spoofable display telemetry only; it is never authorization, replay, or proof of enforcement.
+- Supported `read` and `bash` results are redacted for common secrets. `grep`, `find`, `ls`, Radius, and other custom tools stay unguarded and unredacted.
 - At most four live children at once. Results stay in input order. Escape aborts queued and running children.
 - A role without `model` inherits the parent model. It inherits parent thinking only with that model; a pinned model without `thinking` uses Pi's default for that model. The child CLI must already know the model.
 - Child usage is included in parent totals. Combined model-visible output is capped at 50 KiB and 2,000 lines.
@@ -71,11 +80,25 @@ Instructions for the role.
 
 ## Security
 
-Tool allowlists are not a sandbox. Children run with the user's full permissions. `worker` has `bash`. Context files can contain prompt injection. Sandbox the parent Pi for untrusted repos or unattended mutation.
+Tool allowlists and permission-gate are heuristic guardrails, not a sandbox. Children run with the user's full permissions. `worker` has `bash`. The gate currently inspects `bash`, `read`, `write`, and `edit` only; unsupported tools are not blocked or redacted through this integration. Allowed programs still run as the user. Interpreters and nested processes can bypass heuristic recognition, and context files can contain prompt injection. Sandbox the parent Pi for untrusted repos or unattended mutation.
 
 ## Development
 
+Default checks do not require an installed permission-gate:
+
 ```sh
-npm run typecheck
-npm test
+npm run check
+```
+
+The actual-Pi released-gate suite needs the installed v0.4.0 pin:
+
+```sh
+pi install git:git@github.com:ronalson/pi-permission-gate@v0.4.0
+npm run check:integration
+```
+
+During development, integration can instead load a worktree gate while still requiring that package's name and exact `0.4.0` version:
+
+```sh
+PERMISSION_GATE_INTEGRATION_PATH=/path/to/pi-permission-gate/index.ts npm run test:integration
 ```
