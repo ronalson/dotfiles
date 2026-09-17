@@ -12,7 +12,14 @@ From the repository root:
 
 ## Extensions
 
-Stow excludes `node_modules`. Extensions kept in this repository manage their own development dependencies, while packages installed with `pi install` manage runtime dependencies through Pi.
+Stow excludes `node_modules`. Local extensions in this package (`ask-now`, `exit.ts`) manage their own development dependencies.
+
+Shareable extensions are installed with `pi install`:
+
+```sh
+pi install git:git@github.com:ronalson/pi-permission-gate@v0.4.0
+pi install git:git@github.com:ronalson/pi-subagents@v0.1.0
+```
 
 ## Verify
 
