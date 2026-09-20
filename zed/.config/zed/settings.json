@@ -7,7 +7,9 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
-  "markdown_preview_font_size": 14.0,
+  "markdown_preview": {
+    "font_size": 14.0
+  },
   "agent_buffer_font_size": 14.0,
   "agent_ui_font_size": 14.0,
   "lsp": {
@@ -28,8 +30,15 @@
     },
   },
   "agent_servers": {
-    "cursor": {
-      "type": "registry",
+    "grok-build": {
+      "type": "registry"
+    },
+    "codex-acp": {
+      "default_config_options": {
+        "model": "gpt-5.6-sol",
+        "mode": "agent"
+      },
+      "type": "registry"
     },
   },
   "disable_ai": false,
@@ -96,6 +105,68 @@
     },
   },
   "agent": {
+    "favorite_models": [
+      {
+        "provider": "openrouter",
+        "model": "google/gemini-3.7-flash",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "deepseek/deepseek-v4-pro-0813",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "moonshotai/kimi-k3",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "x-ai/grok-4.6",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openai-subscribed",
+        "model": "gpt-5.6-sol",
+        "enable_thinking": true,
+        "effort": "high"
+      },
+      {
+        "provider": "openai-subscribed",
+        "model": "gpt-5.6-terra",
+        "enable_thinking": true,
+        "effort": "low"
+      },
+      {
+        "provider": "openai-subscribed",
+        "model": "gpt-5.6-luna",
+        "enable_thinking": true,
+        "effort": "medium"
+      },
+      {
+        "provider": "zed.dev",
+        "model": "claude-sonnet-5",
+        "enable_thinking": true,
+        "effort": "high"
+      },
+      {
+        "provider": "zed.dev",
+        "model": "claude-haiku-4-5",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "~deepseek/deepseek-v4-flash-latest",
+        "enable_thinking": true
+      }
+    ],
+    "default_model": {
+      "provider": "openai-subscribed",
+      "model": "gpt-5.6-sol",
+      "enable_thinking": true,
+      "effort": "high"
+    },
     "sidebar_side": "right",
     "dock": "right",
     "button": true,
