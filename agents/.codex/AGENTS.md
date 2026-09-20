@@ -5,6 +5,17 @@
 - When intent is unclear, assume the user is asking a question. Answer first and ask before making changes.
 - Once the user requests work, carry it through implementation and appropriate verification. Make routine decisions within scope without asking again. Ask when ambiguity materially affects the outcome or requires expanding scope.
 
+## Completion Contract
+
+Before mutating for actionable work, state a short contract:
+
+- **Outcome** (what done looks like)
+- **Preserve** (what must not change)
+- **Accept when** (concrete checks or observable conditions)
+- **Stop and ask if** (ambiguity or blast-radius triggers)
+
+Skip only for trivial, clearly reversible edits already tightly scoped.
+
 ## Safety and Blast Radius
 
 - Be careful with destructive or difficult-to-reverse actions.
@@ -38,8 +49,12 @@
 
 ## Verification
 
+- Before deep work, confirm access and tools the task needs.
+- Match verification depth to risk (low / medium / high).
 - Run checks appropriate to the change and complete required checks.
 - Fix failures caused by your changes and rerun affected checks.
+- After the final mutation, close with two parts: (1) rerun the acceptance path from the contract / agreed checks; (2) inspect the full diff for unintended edits.
+- Never treat a check from before the last edit as proof of done.
 - Once checks pass, broaden or repeat verification only when new changes, failures, or unresolved concerns justify it.
 - Report checks you could not run and failures that remain.
 
@@ -49,9 +64,10 @@
 - Use fast, cost-efficient agents for bounded mechanical work.
 - Use stronger reasoning agents for independent architectural or adversarial analysis.
 - Delegate only when the work can proceed independently and delegation provides real value.
-- Consult `advisor` only for a difficult decision, architectural trade-off, or consequential independent review. Handle routine implementation, debugging, search, and checks yourself or with `scout` / `worker`.
-- Send `advisor` a self-contained packet: the precise question, desired outcome, acceptance criteria, constraints, viable options or review scope, excerpts with paths and line numbers, and known unknowns. Scout first when evidence is missing. One consult per question. Do not run `advisor` in parallel with `worker`.
-- After a high-value consult, save the advisor's substantive output in `<repo-root>/context/advisor/YYYY-MM-DD-topic.md`. Create the directory when needed and add a suffix rather than overwriting. Never write these notes to `context/astra/`. Do not commit `context/` files unless requested. For a small clarification without durable value, keep the answer in the conversation.
+- Consult `advisor` only for a difficult decision, architectural trade-off, or consequential independent review.
+- Handle routine implementation, debugging, search, and checks yourself or with `scout` / `worker`.
+- Worker packets include six brief fields: **Goal**, **Use** (non-inheritable context), **Own**, **Do not**, **Return**, **Stop if**.
+- Isolate concurrent writers to disjoint files; reconcile returns on the main thread before the next step.
 
 ## Commits and Pull Requests
 
