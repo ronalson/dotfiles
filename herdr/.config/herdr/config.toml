@@ -1,0 +1,18 @@
+# herdr — terminal workspace manager for AI coding agents
+# Full reference: https://herdr.dev/docs/configuration/ (`herdr --default-config`)
+
+onboarding = false
+
+[theme]
+name = "vesper"
+auto_switch = false
+
+[ui.sound]
+enabled = true
+
+[ui.toast]
+delivery = "herdr"
+
+[keys]
+# Hyper (Caps Lock held) is cmd+ctrl+opt+shift — see karabiner/.config/karabiner.edn
+prefix = "ctrl+alt+shift+cmd+a"

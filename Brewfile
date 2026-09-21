@@ -15,6 +15,7 @@ brew "azure-cli"
 brew "dockutil"
 brew "fnm"
 brew "gh"
+brew "herdr"
 brew "stow"
 brew "atlassian/acli/acli"
 

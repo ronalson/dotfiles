@@ -51,7 +51,7 @@ fi
 
 # --- 4. Dotfiles (zsh profile matches machine) -----------------------------------
 info "Stowing dotfiles..."
-"$DOTFILES_DIR/install.sh" aerospace ghostty git karabiner zed "zsh-$PROFILE"
+"$DOTFILES_DIR/install.sh" aerospace ghostty git herdr karabiner zed "zsh-$PROFILE"
 
 # --- 5. oh-my-zsh + custom plugins ---------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then

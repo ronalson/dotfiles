@@ -10,6 +10,7 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
 | `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
 | `ghostty` | [Ghostty](https://ghostty.org/) terminal emulator | `~/.config/ghostty/` |
+| `herdr` | [Herdr](https://herdr.dev/) terminal workspace manager for coding agents | `~/.config/herdr/` |
 | `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping via [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) | `~/.config/karabiner/` |
 | `zed` | [Zed](https://zed.dev/) code editor | `~/.config/zed/` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
@@ -91,6 +92,8 @@ dotfiles/
 │       └── karabiner/karabiner.json         → ~/.config/karabiner/karabiner.json
 ├── ghostty/
 │   └── .config/ghostty/config.ghostty       → ~/.config/ghostty/config.ghostty
+├── herdr/
+│   └── .config/herdr/config.toml            → ~/.config/herdr/config.toml
 ├── zed/
 │   └── .config/zed/{settings,keymap}.json   → ~/.config/zed/
 └── zsh-personal/
