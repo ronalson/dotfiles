@@ -4,5 +4,14 @@
 
 cask_args adopt: true
 
+tap "atlassian/acli", trusted: true
+
+# --- CLI tools -------------------------------------------------------------
+brew "azure-cli"
+brew "atlassian/acli/acli"
+
+# --- Apps --------------------------------------------------------------------
+cask "claude"
 cask "dbeaver-community"
+cask "postman"
 cask "rider"

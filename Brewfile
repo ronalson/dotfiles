@@ -6,18 +6,15 @@
 # still fails one, use: brew install --cask --force <name>
 cask_args adopt: true
 
-tap "atlassian/acli", trusted: true
 tap "docker/tap", trusted: true
 tap "nikitabobko/tap"
 
 # --- CLI tools -------------------------------------------------------------
-brew "azure-cli"
 brew "dockutil"
 brew "fnm"
 brew "gh"
 brew "herdr"
 brew "stow"
-brew "atlassian/acli/acli"
 
 # --- Fonts -------------------------------------------------------------------
 cask "font-fira-code"
@@ -25,14 +22,11 @@ cask "font-fira-code"
 # --- Apps --------------------------------------------------------------------
 cask "nikitabobko/tap/aerospace"
 cask "choosy"
-cask "claude"
-cask "cursor"
 cask "docker-desktop"
 cask "figma"
 cask "firefox"
 cask "google-chrome"
 cask "karabiner-elements"
-cask "postman"
 cask "proxyman"
 cask "raycast"
 cask "ghostty"

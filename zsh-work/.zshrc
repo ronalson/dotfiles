@@ -49,7 +49,7 @@ export PATH
 
 # Sourced before fnm below so fnm's shim dir is prepended last and wins on
 # PATH — otherwise Vite+'s bundled node shadows whatever fnm switches to.
-. "$HOME/.vite-plus/env"
+[[ -f "$HOME/.vite-plus/env" ]] && . "$HOME/.vite-plus/env"
 
 # ============================================================================
 # fnm (Fast Node Manager)
