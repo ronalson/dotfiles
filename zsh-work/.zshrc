@@ -22,18 +22,8 @@ fpath+=${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions/src
 # Load Oh My Zsh
 source $ZSH/oh-my-zsh.sh
 
-# Speed up compinit by checking cache only once a day
-autoload -Uz compinit
-if [[ -n ${ZDOTDIR}/.zcompdump(#qNmh+24) ]]; then
-  compinit -C  # Skip security check if dump exists and is less than 24 hours old
-else
-  compinit
-fi
-
-# Compile completion dump for faster loading
-if [[ -s "$HOME/.zcompdump" && (! -s "$HOME/.zcompdump.zwc" || "$HOME/.zcompdump" -nt "$HOME/.zcompdump.zwc") ]]; then
-  zcompile "$HOME/.zcompdump"
-fi
+# Note: oh-my-zsh already runs compinit (and zcompiles its own dump) above.
+# Do not add a second compinit here -- it doubles completion setup cost.
 
 # Disable yarn aliases
 zstyle ':omz:plugins:yarn' aliases no
@@ -52,6 +42,14 @@ path=(
 )
 
 export PATH
+
+# ============================================================================
+# Vite+ bin (https://viteplus.dev)
+# ============================================================================
+
+# Sourced before fnm below so fnm's shim dir is prepended last and wins on
+# PATH — otherwise Vite+'s bundled node shadows whatever fnm switches to.
+. "$HOME/.vite-plus/env"
 
 # ============================================================================
 # fnm (Fast Node Manager)

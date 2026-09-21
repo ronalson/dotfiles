@@ -7,6 +7,15 @@ ZSH_THEME="robbyrussell"
 # Plugins
 plugins=(git z zsh-autosuggestions zsh-syntax-highlighting)
 
+# Completion dirs must join fpath BEFORE oh-my-zsh loads, because OMZ runs the
+# only compinit. Added after it, they are missed until the dump is rebuilt.
+if [[ -d "$HOME/.docker/completions" ]]; then
+  fpath=("$HOME/.docker/completions" $fpath)
+fi
+if [[ -d "$HOME/.grok/completions/zsh" ]]; then
+  fpath=("$HOME/.grok/completions/zsh" $fpath)
+fi
+
 source $ZSH/oh-my-zsh.sh
 
 # -----------------------------
@@ -37,11 +46,6 @@ pnpm-upgrade() {
     command pnpm update -g --latest
 }
 # pnpm end
-
-# Lazy-load Docker Desktop config to enable Docker CLI completions (no compinit here; OMZ handles it)
-if [[ -d "$HOME/.docker/completions" ]]; then
-  fpath=("$HOME/.docker/completions" $fpath)
-fi
 
 # -----------------------------
 # Node version in RPROMPT (root-only, no cache)
@@ -92,6 +96,4 @@ export PATH
 
 # >>> grok installer >>>
 export PATH="$HOME/.grok/bin:$PATH"
-fpath=(~/.grok/completions/zsh $fpath)
-autoload -Uz compinit && compinit -C
 # <<< grok installer <<<
