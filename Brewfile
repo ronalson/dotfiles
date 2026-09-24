@@ -21,7 +21,10 @@ cask "font-fira-code"
 
 # --- Apps --------------------------------------------------------------------
 cask "nikitabobko/tap/aerospace"
+cask "bruno"
 cask "choosy"
+cask "claude-code@latest"
+cask "codexbar"
 cask "docker-desktop"
 cask "figma"
 cask "firefox"

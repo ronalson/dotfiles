@@ -60,6 +60,14 @@ export PATH
 eval "$(fnm env --use-on-cd)"
 
 # ============================================================================
+# mise (Go and other tool versions, per project via mise.toml)
+# ============================================================================
+
+# Switches tool versions on `cd` from a project's mise.toml. Node stays with
+# fnm: mise only manages the tools a project's mise.toml lists.
+eval "$(mise activate zsh)"
+
+# ============================================================================
 # Zed as default editor
 # ============================================================================
 

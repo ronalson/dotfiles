@@ -9,9 +9,12 @@ tap "atlassian/acli", trusted: true
 # --- CLI tools -------------------------------------------------------------
 brew "azure-cli"
 brew "atlassian/acli/acli"
+brew "mise"
+brew "yamllint"
 
 # --- Apps --------------------------------------------------------------------
 cask "claude"
+cask "cursor"
 cask "dbeaver-community"
 cask "postman"
 cask "rider"
