@@ -1,0 +1,22 @@
+# macOS preferences: <domain> <key> <type> <value>
+# defaults.sh writes these values and verify.sh checks them.
+# Values captured from the previous machine.
+
+# --- Dock -------------------------------------------------------------------
+com.apple.dock  autohide                     bool    true
+com.apple.dock  orientation                  string  left
+com.apple.dock  tilesize                     int     21
+com.apple.dock  magnification                bool    true
+com.apple.dock  largesize                    int     67
+com.apple.dock  show-recents                 bool    false
+
+# --- Keyboard ---------------------------------------------------------------
+# Fast key repeat (lower = faster)
+-g              KeyRepeat                    int     5
+-g              InitialKeyRepeat             int     25
+
+# --- Scroll & pointer -------------------------------------------------------
+# Disable "natural" scrolling
+-g              com.apple.swipescrolldirection  bool  false
+# Mouse tracking speed
+-g              com.apple.mouse.scaling      float   2

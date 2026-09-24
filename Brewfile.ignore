@@ -1,0 +1,4 @@
+# Installed with Homebrew but intentionally not managed by the dotfiles.
+# verify.sh doesn't flag these as untracked. One name per line, no tap prefix.
+sonarqube-cli
+visual-studio-code

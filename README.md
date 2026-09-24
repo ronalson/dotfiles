@@ -22,8 +22,13 @@ Beyond stow packages, the repo also carries:
 - `Brewfile` — every CLI tool, app, font (`brew bundle`)
 - `Brewfile.work` — work-only extras (Rider, DBeaver); applied only by
   `./bootstrap.sh work`
+- `Brewfile.ignore` — Homebrew packages deliberately left unmanaged, so
+  `verify.sh` doesn't report them as untracked
 - `macos/` — system preferences (`defaults.sh`) and Dock layout (`dock.sh`)
 - `bootstrap.sh` — one-shot new-machine setup
+- `packages.sh` — the stow packages each profile uses (read by `bootstrap.sh`
+  and `verify.sh`)
+- `verify.sh` — read-only report of where this machine differs from the repo
 - `MIGRATION.md` — manual checklist for what automation can't cover (keys, auth, licenses)
 
 ## New machine setup
@@ -40,6 +45,30 @@ defaults + Dock. The `work` profile additionally installs Rosetta 2 and
 
 Then follow [MIGRATION.md](MIGRATION.md) for the manual steps.
 
+## Checking a machine
+
+```bash
+./verify.sh              # profile detected from the ~/.zshrc symlink
+./verify.sh personal     # or name it explicitly
+```
+
+Run it after pulling changes made on another machine. It reports, without
+changing anything:
+
+- commits on the remote that haven't been pulled, and uncommitted changes
+- files from the profile's packages (`packages.sh`) that aren't symlinked, or
+  that a real file is blocking
+- Brewfile entries that aren't installed, or whose app exists in
+  `/Applications` but isn't managed by Homebrew
+- Homebrew packages installed here but missing from the Brewfiles, and
+  available updates (warnings only)
+- oh-my-zsh and its plugins, the fnm default Node version
+- macOS preferences that differ from `macos/defaults.list`
+- the machine-specific files and auth from MIGRATION.md
+
+Each problem comes with the command that fixes it. It exits 1 when any check
+fails.
+
 ## Prerequisites (stow-only setup)
 
 - [Homebrew](https://brew.sh/)
@@ -52,9 +81,14 @@ Then follow [MIGRATION.md](MIGRATION.md) for the manual steps.
 git clone <repo-url> ~/Code/dotfiles
 cd ~/Code/dotfiles
 
-# 2. Run the installer (stows all packages)
+# 2. Print this machine's package list, then run the command it shows
 ./install.sh
 ```
+
+`install.sh` only stows the packages you name. Run with no arguments, it
+changes nothing and prints the package list for this machine's profile (from
+`packages.sh`) plus every package in the repo. Stowing everything would link
+both zsh profiles, which conflict, and packages a machine doesn't use.
 
 ### Stow a specific package
 
@@ -67,14 +101,13 @@ cd ~/Code/dotfiles
 ### Preview changes without applying
 
 ```bash
-./install.sh --dry
+./install.sh --dry aerospace
 ```
 
 ### Remove symlinks
 
 ```bash
-./install.sh --delete
-./install.sh --delete aerospace   # specific package
+./install.sh --delete aerospace
 ```
 
 ## How it works
@@ -92,7 +125,7 @@ dotfiles/
 ├── karabiner/
 │   └── .config/
 │       ├── karabiner.edn                    → ~/.config/karabiner.edn (GokuRakuJo source)
-│       └── karabiner/karabiner.json         → ~/.config/karabiner/karabiner.json
+│       └── karabiner/                       → ~/.config/karabiner/ (whole directory)
 ├── ghostty/
 │   └── .config/ghostty/config.ghostty       → ~/.config/ghostty/config.ghostty
 ├── herdr/
@@ -103,7 +136,9 @@ dotfiles/
     └── .zshrc                               → ~/.zshrc
 ```
 
-Stow runs with `--no-folding`, creating file-level symlinks. This keeps directories like `~/.config/karabiner/` intact while only symlinking the files we version.
+Stow runs with `--no-folding`, creating file-level symlinks. This keeps directories like `~/.config/zed/` intact while only symlinking the files we version.
+
+The exception is `karabiner`: Karabiner only notices config changes when the whole `~/.config/karabiner` directory is a symlink, and it replaces a symlinked `karabiner.json` with a regular file when it saves. That package is stowed without `--no-folding` (see `stow_flags` in `packages.sh`), and Karabiner's `automatic_backups/` and `assets/` are gitignored inside it.
 
 ## Adding a new config
 
@@ -123,7 +158,7 @@ git add new-package/ && git commit -m "Add new-package config"
 
 ## Karabiner key mappings
 
-The `karabiner.edn` file is the [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) source. Running `goku` compiles it into `karabiner.json`. Karabiner also rewrites its JSON on every UI settings change — since the file is symlinked, changes appear directly in the repo.
+The `karabiner.edn` file is the [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) source. Running `goku` compiles it into `karabiner.json`. Karabiner also rewrites its JSON on every UI settings change — since `~/.config/karabiner` links into the repo, changes appear directly in `git diff`.
 
 | Trigger | Action |
 |---------|--------|

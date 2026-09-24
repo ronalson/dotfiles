@@ -46,8 +46,9 @@ credentials*
 .claude/projects/
 
 # --- Karabiner noise -------------------------------------------------------
-.config/karabiner/automatic_backups/
-.config/karabiner/assets/
+# ~/.config/karabiner links to karabiner/.config/karabiner/, so Karabiner writes these into the repo
+karabiner/.config/karabiner/automatic_backups/
+karabiner/.config/karabiner/assets/
 
 # --- Node / JS noise -------------------------------------------------------
 node_modules/

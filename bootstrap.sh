@@ -49,9 +49,10 @@ if [[ "$PROFILE" == "work" ]]; then
     brew bundle --file="$DOTFILES_DIR/Brewfile.work"
 fi
 
-# --- 4. Dotfiles (zsh profile matches machine) -----------------------------------
+# --- 4. Dotfiles (package list per profile lives in packages.sh) ------------------
 info "Stowing dotfiles..."
-"$DOTFILES_DIR/install.sh" aerospace ghostty git herdr karabiner zed "zsh-$PROFILE"
+source "$DOTFILES_DIR/packages.sh"
+"$DOTFILES_DIR/install.sh" $(profile_packages "$PROFILE")
 
 # --- 5. oh-my-zsh + custom plugins ---------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
@@ -81,4 +82,5 @@ info "Applying macOS defaults..."
 
 info "Bootstrap complete!"
 echo "Next: work through the manual checklist in MIGRATION.md"
-echo "(SSH key, gh auth, Raycast import, licenses, ~/.secrets)"
+echo "(SSH key, gh auth, Raycast import, licenses, ~/.secrets),"
+echo "then run ./verify.sh to confirm the machine matches the repo."

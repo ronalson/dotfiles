@@ -1,203 +1,191 @@
 {
-  "profiles" : [ {
-    "complex_modifications" : {
-      "parameters" : {
-        "basic.simultaneous_threshold_milliseconds" : 35,
-        "basic.to_delayed_action_delay_milliseconds" : 0,
-        "basic.to_if_alone_timeout_milliseconds" : 300,
-        "basic.to_if_held_down_threshold_milliseconds" : 260
-      },
-      "rules" : [ {
-        "description" : "Caps Lock -> Hyper when held, Escape when tapped",
-        "manipulators" : [ {
-          "to_if_alone" : [ {
-            "key_code" : "escape"
-          } ],
-          "from" : {
-            "key_code" : "caps_lock",
-            "modifiers" : {
-              "optional" : [ "any" ]
-            }
-          },
-          "to" : [ {
-            "key_code" : "left_shift",
-            "modifiers" : [ "left_command", "left_control", "left_option" ]
-          } ],
-          "type" : "basic"
-        } ]
-      }, {
-        "description" : "Hyper Arrows (vim-style)",
-        "manipulators" : [ {
-          "from" : {
-            "key_code" : "h",
-            "modifiers" : {
-              "mandatory" : [ "left_command", "left_control", "left_option", "left_shift" ]
-            }
-          },
-          "to" : [ {
-            "key_code" : "left_arrow"
-          } ],
-          "type" : "basic"
-        }, {
-          "from" : {
-            "key_code" : "j",
-            "modifiers" : {
-              "mandatory" : [ "left_command", "left_control", "left_option", "left_shift" ]
-            }
-          },
-          "to" : [ {
-            "key_code" : "down_arrow"
-          } ],
-          "type" : "basic"
-        }, {
-          "from" : {
-            "key_code" : "k",
-            "modifiers" : {
-              "mandatory" : [ "left_command", "left_control", "left_option", "left_shift" ]
-            }
-          },
-          "to" : [ {
-            "key_code" : "up_arrow"
-          } ],
-          "type" : "basic"
-        }, {
-          "from" : {
-            "key_code" : "l",
-            "modifiers" : {
-              "mandatory" : [ "left_command", "left_control", "left_option", "left_shift" ]
-            }
-          },
-          "to" : [ {
-            "key_code" : "right_arrow"
-          } ],
-          "type" : "basic"
-        } ]
-      }, {
-        "description" : "Hyper + Equal -> Fn+F12",
-        "manipulators" : [ {
-          "from" : {
-            "key_code" : "equal_sign",
-            "modifiers" : {
-              "mandatory" : [ "left_command", "left_control", "left_option", "left_shift" ]
-            }
-          },
-          "to" : [ {
-            "key_code" : "f12",
-            "modifiers" : [ "fn" ]
-          } ],
-          "type" : "basic"
-        } ]
-      }, {
-        "description" : "Home Row Chords - Minimal",
-        "manipulators" : [ {
-          "type" : "basic",
-          "from" : {
-            "simultaneous" : [ {
-              "key_code" : "f"
-            }, {
-              "key_code" : "d"
-            } ],
-            "simultaneous_options" : {
-              "detect_key_down_uninterruptedly" : false,
-              "key_down_order" : "insensitive",
-              "key_up_order" : "insensitive",
-              "key_up_when" : "all"
-            }
-          },
-          "to" : [ {
-            "key_code" : "left_option"
-          } ],
-          "to_if_alone" : [ {
-            "key_code" : "f"
-          }, {
-            "key_code" : "d"
-          } ]
-        }, {
-          "type" : "basic",
-          "from" : {
-            "simultaneous" : [ {
-              "key_code" : "f"
-            }, {
-              "key_code" : "s"
-            } ],
-            "simultaneous_options" : {
-              "detect_key_down_uninterruptedly" : false,
-              "key_down_order" : "insensitive",
-              "key_up_order" : "insensitive",
-              "key_up_when" : "all"
-            }
-          },
-          "to" : [ {
-            "key_code" : "left_option"
-          }, {
-            "key_code" : "left_shift"
-          } ],
-          "to_if_alone" : [ {
-            "key_code" : "f"
-          }, {
-            "key_code" : "s"
-          } ]
-        }, {
-          "type" : "basic",
-          "from" : {
-            "simultaneous" : [ {
-              "key_code" : "j"
-            }, {
-              "key_code" : "k"
-            } ],
-            "simultaneous_options" : {
-              "detect_key_down_uninterruptedly" : false,
-              "key_down_order" : "insensitive",
-              "key_up_order" : "insensitive",
-              "key_up_when" : "all"
-            }
-          },
-          "to" : [ {
-            "key_code" : "right_option"
-          } ],
-          "to_if_alone" : [ {
-            "key_code" : "j"
-          }, {
-            "key_code" : "k"
-          } ]
-        }, {
-          "type" : "basic",
-          "from" : {
-            "simultaneous" : [ {
-              "key_code" : "j"
-            }, {
-              "key_code" : "l"
-            } ],
-            "simultaneous_options" : {
-              "detect_key_down_uninterruptedly" : false,
-              "key_down_order" : "insensitive",
-              "key_up_order" : "insensitive",
-              "key_up_when" : "all"
-            }
-          },
-          "to" : [ {
-            "key_code" : "right_option"
-          }, {
-            "key_code" : "right_shift"
-          } ],
-          "to_if_alone" : [ {
-            "key_code" : "j"
-          }, {
-            "key_code" : "l"
-          } ]
-        } ]
-      } ]
-    },
-    "devices" : [ {
-      "identifiers" : {
-        "is_keyboard" : true
-      },
-      "manipulate_caps_lock_led" : false
-    } ],
-    "name" : "Default",
-    "selected" : true,
-    "virtual_hid_keyboard" : {
-      "keyboard_type_v2" : "ansi"
-    }
-  } ]
+    "global": { "show_in_menu_bar": false },
+    "profiles": [
+        {
+            "complex_modifications": {
+                "parameters": {
+                    "basic.simultaneous_threshold_milliseconds": 35,
+                    "basic.to_delayed_action_delay_milliseconds": 0,
+                    "basic.to_if_alone_timeout_milliseconds": 300,
+                    "basic.to_if_held_down_threshold_milliseconds": 260
+                },
+                "rules": [
+                    {
+                        "description": "Caps Lock -> Hyper when held, Escape when tapped",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "caps_lock",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "left_shift",
+                                        "modifiers": ["left_command", "left_control", "left_option"]
+                                    }
+                                ],
+                                "to_if_alone": [{ "key_code": "escape" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper Arrows (vim-style)",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "h",
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
+                                },
+                                "to": [{ "key_code": "left_arrow" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "j",
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
+                                },
+                                "to": [{ "key_code": "down_arrow" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "k",
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
+                                },
+                                "to": [{ "key_code": "up_arrow" }],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "key_code": "l",
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
+                                },
+                                "to": [{ "key_code": "right_arrow" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper + Equal -> Fn+F12",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "equal_sign",
+                                    "modifiers": { "mandatory": ["left_command", "left_control", "left_option", "left_shift"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "f12",
+                                        "modifiers": ["fn"]
+                                    }
+                                ],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Home Row Chords - Minimal",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "simultaneous": [
+                                        { "key_code": "f" },
+                                        { "key_code": "d" }
+                                    ],
+                                    "simultaneous_options": {
+                                        "detect_key_down_uninterruptedly": false,
+                                        "key_down_order": "insensitive",
+                                        "key_up_order": "insensitive",
+                                        "key_up_when": "all"
+                                    }
+                                },
+                                "to": [{ "key_code": "left_option" }],
+                                "to_if_alone": [
+                                    { "key_code": "f" },
+                                    { "key_code": "d" }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "simultaneous": [
+                                        { "key_code": "f" },
+                                        { "key_code": "s" }
+                                    ],
+                                    "simultaneous_options": {
+                                        "detect_key_down_uninterruptedly": false,
+                                        "key_down_order": "insensitive",
+                                        "key_up_order": "insensitive",
+                                        "key_up_when": "all"
+                                    }
+                                },
+                                "to": [
+                                    { "key_code": "left_option" },
+                                    { "key_code": "left_shift" }
+                                ],
+                                "to_if_alone": [
+                                    { "key_code": "f" },
+                                    { "key_code": "s" }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "simultaneous": [
+                                        { "key_code": "j" },
+                                        { "key_code": "k" }
+                                    ],
+                                    "simultaneous_options": {
+                                        "detect_key_down_uninterruptedly": false,
+                                        "key_down_order": "insensitive",
+                                        "key_up_order": "insensitive",
+                                        "key_up_when": "all"
+                                    }
+                                },
+                                "to": [{ "key_code": "right_option" }],
+                                "to_if_alone": [
+                                    { "key_code": "j" },
+                                    { "key_code": "k" }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "from": {
+                                    "simultaneous": [
+                                        { "key_code": "j" },
+                                        { "key_code": "l" }
+                                    ],
+                                    "simultaneous_options": {
+                                        "detect_key_down_uninterruptedly": false,
+                                        "key_down_order": "insensitive",
+                                        "key_up_order": "insensitive",
+                                        "key_up_when": "all"
+                                    }
+                                },
+                                "to": [
+                                    { "key_code": "right_option" },
+                                    { "key_code": "right_shift" }
+                                ],
+                                "to_if_alone": [
+                                    { "key_code": "j" },
+                                    { "key_code": "l" }
+                                ],
+                                "type": "basic"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "devices": [
+                {
+                    "identifiers": { "is_keyboard": true },
+                    "manipulate_caps_lock_led": false
+                }
+            ],
+            "name": "Default",
+            "selected": true,
+            "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
+        }
+    ]
 }
