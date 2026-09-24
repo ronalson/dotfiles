@@ -7,6 +7,7 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | Package | Description | Target |
 |---------|-------------|--------|
 | `agents` | Shared global instructions for Codex, Pi, and Claude | `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, `~/.claude/CLAUDE.md` |
+| `claude` | [Claude Code](https://claude.com/claude-code) status line script | `~/.claude/statusline.sh` |
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
 | `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
 | `ghostty` | [Ghostty](https://ghostty.org/) terminal emulator | `~/.config/ghostty/` |
@@ -86,6 +87,8 @@ dotfiles/
 │   └── .config/aerospace/
 │       ├── aerospace.toml                   → ~/.config/aerospace/aerospace.toml
 │       └── toggle-split.sh                  → ~/.config/aerospace/toggle-split.sh
+├── claude/
+│   └── .claude/statusline.sh                → ~/.claude/statusline.sh
 ├── karabiner/
 │   └── .config/
 │       ├── karabiner.edn                    → ~/.config/karabiner.edn (GokuRakuJo source)
@@ -140,6 +143,60 @@ Notes:
 - Single-key home-row mod-tap mappings were removed due repeat/drop issues under fast rolling typing in Karabiner.
 - These are explicit simultaneous chords only; normal home-row letters remain untouched.
 - Chords send original letters if chorded keys are released without being used as modifiers.
+
+## Claude Code status line
+
+`claude/.claude/statusline.sh` renders a two-line status line from the JSON that Claude Code sends on stdin. It needs `jq`, `git`, and a [Nerd Font](https://www.nerdfonts.com/) for the pie icons.
+
+`~/.claude/settings.json` is not versioned, so on a new machine add the entry by hand:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "bash ~/.claude/statusline.sh"
+}
+```
+
+Line 1 example:
+
+```
+Opus 5.5 [medium] | [==--------] 50k/200k (25%) | 󰪟 13% (4h30m) | ✗ main (+42, -10)
+```
+
+Each segment is dropped when its input field is missing, and `|` separators appear only between segments that are shown.
+
+| Segment | Source | Rules |
+|---------|--------|-------|
+| Model | `.model.display_name` | Bold cyan |
+| Effort | `.effort.level` | Blue, in brackets |
+| Context | `.context_window.used_percentage`, `.context_window.context_window_size` | See below |
+| 5h limit | `.rate_limits.five_hour.used_percentage`, `.rate_limits.five_hour.resets_at` | See below |
+| Git | `git` in `.workspace.current_dir` | See below |
+
+**Context.** A 10-slot bar where each `=` is 10% of the window, rounded down (9% shows no `=`). Tokens used are `used_percentage × context_window_size`, shown as `k`/`M`. The bar, count, and percentage are colored by absolute tokens used, so the colors mean the same thing across window sizes:
+
+| Tokens used | Color |
+|-------------|-------|
+| under 30k | grey |
+| 30k – 120k | green |
+| 120k – 360k | yellow |
+| 360k – 600k | orange |
+| over 600k | red |
+
+Without `context_window_size`, only the uncolored bar and percentage are shown.
+
+**5h limit.** A pie icon (`nf-md-circle_slice_1`–`_8`, U+F0A9E–U+F0AA5) fills in eighths, rounded up; 0% still shows one slice. The countdown to `resets_at` (epoch seconds or ISO 8601) shows as `XhYm`. The whole segment is colored by usage:
+
+| 5h usage | Color |
+|----------|-------|
+| under 50% | green |
+| 50% – 74% | yellow |
+| 75% – 89% | orange |
+| 90% and up | red |
+
+**Git.** Hidden outside a repo. A green `✓` means a clean tree; a red `✗` means any change, including untracked files. The branch is magenta. `(+N, -N)` counts staged and unstaged line changes against `HEAD` (untracked files are not counted), with `+` green and `-` red, and is hidden when both are zero.
+
+Line 2 is a single black `·` that separates the status line from Claude Code's mode indicator. Claude Code trims blank lines, so the line needs visible content.
 
 ## ZSH profiles
 
