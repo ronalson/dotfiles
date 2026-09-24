@@ -7,14 +7,7 @@
 
 ## Completion Contract
 
-Before mutating for actionable work, state a short contract:
-
-- **Outcome** (what done looks like)
-- **Preserve** (what must not change)
-- **Accept when** (concrete checks or observable conditions)
-- **Stop and ask if** (ambiguity or blast-radius triggers)
-
-Skip only for trivial, clearly reversible edits already tightly scoped.
+Before mutating for actionable work, say in one or two sentences what done looks like and what would make you stop and ask. Skip this for small, reversible edits.
 
 ## Safety and Blast Radius
 
@@ -50,20 +43,14 @@ Skip only for trivial, clearly reversible edits already tightly scoped.
 ## Verification
 
 - Before deep work, confirm access and tools the task needs.
-- Match verification depth to risk (low / medium / high).
-- Run checks appropriate to the change and complete required checks.
-- Fix failures caused by your changes and rerun affected checks.
-- After the final mutation, close with two parts: (1) rerun the acceptance path from the contract / agreed checks; (2) inspect the full diff for unintended edits.
-- Never treat a check from before the last edit as proof of done.
-- Once checks pass, broaden or repeat verification only when new changes, failures, or unresolved concerns justify it.
+- Match verification depth to risk.
 - Report checks you could not run and failures that remain.
 
 ## Delegation
 
-- Do not use multiple agents for work a single agent can finish in one pass.
+- Delegate only when work can proceed independently and one agent can't finish it in one pass. Do not use subagents to verify or double-check your own work.
 - Use fast, cost-efficient agents for bounded mechanical work.
 - Use stronger reasoning agents for independent architectural or adversarial analysis.
-- Delegate only when the work can proceed independently and delegation provides real value.
 - Consult `advisor` only for a difficult decision, architectural trade-off, or consequential independent review.
 - Handle routine implementation, debugging, search, and checks yourself or with `scout` / `worker`.
 - Worker packets include six brief fields: **Goal**, **Use** (non-inheritable context), **Own**, **Do not**, **Return**, **Stop if**.

@@ -6,7 +6,7 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 
 | Package | Description | Target |
 |---------|-------------|--------|
-| `agents` | Shared global instructions for Codex, Pi, and Claude | `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, `~/.claude/CLAUDE.md` |
+| `agents` | Global agent instructions: one file shared by Codex and Pi, a separate one for Claude | `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, `~/.claude/CLAUDE.md` |
 | `claude` | [Claude Code](https://claude.com/claude-code) status line script | `~/.claude/statusline.sh` |
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
 | `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
