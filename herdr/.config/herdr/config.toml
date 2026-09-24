@@ -16,3 +16,6 @@ delivery = "herdr"
 [keys]
 # Hyper (Caps Lock held) is cmd+ctrl+opt+shift — see karabiner/.config/karabiner.edn
 prefix = "ctrl+alt+shift+cmd+a"
+
+[ui]
+status_indicators = "symbols"
