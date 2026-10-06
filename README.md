@@ -16,6 +16,8 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | `zed` | [Zed](https://zed.dev/) keymap, shared by both machines | `~/.config/zed/keymap.json` |
 | `zed-personal` | Zed settings (personal machine) | `~/.config/zed/settings.json` |
 | `zed-work` | Zed settings (work machine) | `~/.config/zed/settings.json` |
+| `pi` | [Pi](https://github.com/earendil-works/pi-mono) settings and extensions (personal machine only) | `~/.pi/agent/` |
+| `zsh` | Shared ZSH setup (oh-my-zsh, editor, prompt), sourced by both profiles' `.zshrc` | `~/.config/zsh/common.zsh` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
 | `zsh-work` | ZSH config (work machine) | `~/.zshrc` |
 
@@ -137,6 +139,8 @@ dotfiles/
 │   └── .config/zed/keymap.json              → ~/.config/zed/keymap.json
 ├── zed-personal/
 │   └── .config/zed/settings.json            → ~/.config/zed/settings.json
+├── zsh/
+│   └── .config/zsh/common.zsh               → ~/.config/zsh/common.zsh
 └── zsh-personal/
     └── .zshrc                               → ~/.zshrc
 ```
@@ -249,6 +253,11 @@ of each should be stowed at a time:
 ./install.sh --delete zsh-personal zed-personal
 ./install.sh zsh-work zed-work
 ```
+
+Both zsh profiles source `~/.config/zsh/common.zsh` (the `zsh` package) for
+the setup they share, so each `.zshrc` holds only what differs between machines.
+Zed can't include one settings file from another, so each Zed profile is a
+complete copy.
 
 Zed writes settings changed in its UI straight into the linked file. Each
 machine having its own settings file means those edits never collide with the

@@ -1,11 +1,5 @@
-# Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
-
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
-
-# Plugins
-plugins=(git z zsh-autosuggestions zsh-syntax-highlighting)
+# Personal machine. Shared setup (oh-my-zsh, editor, prompt) lives in
+# ~/.config/zsh/common.zsh, from the zsh package.
 
 # Completion dirs must join fpath BEFORE oh-my-zsh loads, because OMZ runs the
 # only compinit. Added after it, they are missed until the dump is rebuilt.
@@ -16,53 +10,14 @@ if [[ -d "$HOME/.grok/completions/zsh" ]]; then
   fpath=("$HOME/.grok/completions/zsh" $fpath)
 fi
 
-source $ZSH/oh-my-zsh.sh
-
-# -----------------------------
-# User configuration
-# -----------------------------
-
-# Set Zed as default editor
-export EDITOR="zed"
-export VISUAL="zed"
-
-alias python=python3
-alias pip=pip3
-
-# -----------------------------
-# Node version in RPROMPT (root-only, no cache)
-# Updates on `cd` and before each prompt.
-# -----------------------------
-
-typeset -g NODE_RPROMPT=""
-
-__update_node_rprompt() {
-  # Do nothing if ZLE isn't active (e.g. zsh -i -c exit benchmarks)
-  [[ -o zle ]] || return
-
-  if [[ -f "$PWD/package.json" ]]; then
-    local v
-    v="$(command node -v 2>/dev/null)" || v=""
-    NODE_RPROMPT="${v:+v${v#v}}"
-  else
-    NODE_RPROMPT=""
-  fi
-}
-
-autoload -Uz add-zsh-hook
-add-zsh-hook chpwd __update_node_rprompt
-add-zsh-hook precmd __update_node_rprompt
-
-setopt prompt_subst
-RPROMPT='${NODE_RPROMPT}'
+source "$HOME/.config/zsh/common.zsh"
 
 # bun completions
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
-typeset -U path
-path=("$HOME/.local/bin" "$BUN_INSTALL/bin" $path)
+path=("$BUN_INSTALL/bin" $path)
 export PATH
 
 # Vite+ bin (https://viteplus.dev)
