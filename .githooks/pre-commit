@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Blocks commits that add secrets. bootstrap.sh enables this hook per clone with
+#   git config core.hooksPath .githooks
+# For a false positive, add a `betterleaks:allow` comment to that line, or add
+# the finding's fingerprint to .betterleaksignore. `git commit --no-verify`
+# skips it.
+
+set -euo pipefail
+
+# Git GUIs (Zed's git panel, for one) may run hooks without Homebrew on PATH.
+PATH="/opt/homebrew/bin:$PATH"
+
+if ! command -v betterleaks >/dev/null 2>&1; then
+    echo "pre-commit: betterleaks is not installed, so staged changes can't be checked for secrets." >&2
+    echo "  brew install betterleaks" >&2
+    exit 1
+fi
+
+# Validation sends found credentials to their providers' APIs. Keep it off even
+# if the environment turns it on.
+unset BETTERLEAKS_VALIDATE BETTERLEAKS_ANALYZE
+
+args=(git --staged --redact --no-banner)
+# 1.x names the file and line of a finding only with --verbose; 2.x prints them
+# by default and has no --verbose flag.
+[[ "$(betterleaks version 2>/dev/null)" == 1.* ]] && args+=(--verbose)
+exec betterleaks "${args[@]}"

@@ -56,6 +56,12 @@ else
     fi
     (( ahead > 0 )) && warn "$ahead local commit(s) not pushed"
 fi
+if [[ "$(git -C "$DOTFILES_DIR" config core.hooksPath)" == .githooks ]]; then
+    pass "Secret-scanning pre-commit hook is enabled"
+else
+    fail "Secret-scanning pre-commit hook is not enabled"
+    hint "git -C $DOTFILES_DIR config core.hooksPath .githooks"
+fi
 changes="$(git -C "$DOTFILES_DIR" status --porcelain)"
 if [[ -n "$changes" ]]; then
     warn "Uncommitted changes"

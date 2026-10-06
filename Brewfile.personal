@@ -11,6 +11,7 @@ tap "docker/tap", trusted: true
 tap "nikitabobko/tap"
 
 # --- CLI tools -------------------------------------------------------------
+brew "betterleaks"
 brew "dockutil"
 brew "gh"
 brew "herdr"

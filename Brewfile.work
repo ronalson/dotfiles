@@ -14,6 +14,7 @@ tap "nikitabobko/tap"
 # --- CLI tools -------------------------------------------------------------
 brew "atlassian/acli/acli"
 brew "azure-cli"
+brew "betterleaks"
 brew "dockutil"
 brew "fnm"
 brew "gh"

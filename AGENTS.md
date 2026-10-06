@@ -15,7 +15,7 @@ macOS dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/), orga
 - **Top level packages** `<package>` each top-level dir is a stow package
 - **Stow packages** use `--no-folding` (file-level symlinks, not directory-level), so directories like `~/.config/zed/` can hold unversioned content alongside versioned files. The one exception is `karabiner`, which `stow_flags` in `packages.sh` stows as a directory link (see Karabiner below).
 - **Adding a new config**: create `<package>/.config/app/file`, copy the original in, run `stow --no-folding --adopt --target=$HOME <package>`, then commit.
-- **CRITICAL: no secrets in the repo.** See `.gitignore` for exclusion patterns. Never commit API keys, tokens, `.env` files, or `~/.claude.json`.
+- **CRITICAL: no secrets in the repo.** See `.gitignore` for exclusion patterns. Never commit API keys, tokens, `.env` files, or `~/.claude.json`. The betterleaks pre-commit hook (`.githooks/pre-commit`) blocks staged secrets; never bypass it with `--no-verify`.
 - **Profile package lists** live in `packages.sh`. When adding a package, add it to each profile that should get it; `bootstrap.sh` stows and `verify.sh` checks only the listed packages.
 - **Brewfiles** are per profile (`Brewfile.personal`, `Brewfile.work`) and each is complete on its own; add a Homebrew package to every profile's Brewfile that should get it.
 - **macOS defaults** live in `macos/defaults.list`, which both `macos/defaults.sh` and `verify.sh` read.

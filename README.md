@@ -59,7 +59,8 @@ Then follow [MIGRATION.md](MIGRATION.md) for the manual steps.
 Run it after pulling changes made on another machine. It reports, without
 changing anything:
 
-- commits on the remote that haven't been pulled, and uncommitted changes
+- commits on the remote that haven't been pulled, uncommitted changes, and
+  whether the secret-scanning pre-commit hook is enabled
 - files from the profile's packages (`packages.sh`) that aren't symlinked, or
   that a real file is blocking
 - entries in the profile's Brewfile that aren't installed, or whose app
@@ -268,3 +269,16 @@ On the personal profile, global npm packages go through Vite+ (`vp install -g`,
 `vp remove -g`, `vp update -g`, `vp list -g`), which keeps them across Node
 versions. `zsh-personal` refuses `npm -g` and `pnpm -g` typed in the shell,
 since those would install into a single Node version's directory.
+
+## Secret scanning
+
+`.githooks/pre-commit` runs [betterleaks](https://github.com/betterleaks/betterleaks)
+on staged changes and blocks a commit that adds a secret. `bootstrap.sh` enables it
+for the clone; on an existing clone run:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+For a false positive, add a `betterleaks:allow` comment to the line, or add the
+finding's fingerprint to `.betterleaksignore`.

@@ -49,6 +49,9 @@ info "Stowing dotfiles..."
 source "$DOTFILES_DIR/packages.sh"
 "$DOTFILES_DIR/install.sh" $(profile_packages "$PROFILE")
 
+# Scan staged changes for secrets before each commit (betterleaks)
+git -C "$DOTFILES_DIR" config core.hooksPath .githooks
+
 # --- 5. oh-my-zsh + custom plugins ---------------------------------------------
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     info "Installing oh-my-zsh..."
