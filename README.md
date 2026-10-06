@@ -12,7 +12,7 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
 | `ghostty` | [Ghostty](https://ghostty.org/) terminal emulator | `~/.config/ghostty/` |
 | `herdr` | [Herdr](https://herdr.dev/) terminal workspace manager for coding agents | `~/.config/herdr/` |
-| `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping via [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) | `~/.config/karabiner/` |
+| `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping | `~/.config/karabiner/` |
 | `zed` | [Zed](https://zed.dev/) keymap, shared by both machines | `~/.config/zed/keymap.json` |
 | `zed-personal` | Zed settings (personal machine) | `~/.config/zed/settings.json` |
 | `zed-work` | Zed settings (work machine) | `~/.config/zed/settings.json` |
@@ -129,9 +129,7 @@ dotfiles/
 ├── claude/
 │   └── .claude/statusline.sh                → ~/.claude/statusline.sh
 ├── karabiner/
-│   └── .config/
-│       ├── karabiner.edn                    → ~/.config/karabiner.edn (GokuRakuJo source)
-│       └── karabiner/                       → ~/.config/karabiner/ (whole directory)
+│   └── .config/karabiner/                   → ~/.config/karabiner/ (whole directory)
 ├── ghostty/
 │   └── .config/ghostty/config.ghostty       → ~/.config/ghostty/config.ghostty
 ├── herdr/
@@ -168,7 +166,7 @@ git add new-package/ && git commit -m "Add new-package config"
 
 ## Karabiner key mappings
 
-The `karabiner.edn` file is the [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) source. Running `goku` compiles it into `karabiner.json`. Karabiner also rewrites its JSON on every UI settings change — since `~/.config/karabiner` links into the repo, changes appear directly in `git diff`.
+Mappings are edited in Karabiner-Elements' settings, which rewrites `karabiner.json` on every change. Since `~/.config/karabiner` links into the repo, those changes appear directly in `git diff`.
 
 | Trigger | Action |
 |---------|--------|

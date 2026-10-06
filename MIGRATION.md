@@ -46,7 +46,4 @@ macOS defaults, and the Dock layout.
 - [ ] Raycast, Shottr — screen recording / accessibility
 
 ### Optional
-- [ ] [Goku](https://github.com/yqrashawn/GokuRakuJo) — only needed to
-  regenerate `karabiner.json` from `karabiner.edn`:
-  `brew install yqrashawn/goku/goku`
 - [ ] Re-run `./macos/dock.sh` after MDM installs Teams/Edge so they get pinned

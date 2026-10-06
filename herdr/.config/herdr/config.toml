@@ -14,7 +14,7 @@ enabled = true
 delivery = "herdr"
 
 [keys]
-# Hyper (Caps Lock held) is cmd+ctrl+opt+shift — see karabiner/.config/karabiner.edn
+# Hyper (Caps Lock held) is cmd+ctrl+opt+shift — see karabiner/.config/karabiner/karabiner.json
 prefix = "ctrl+alt+shift+cmd+a"
 
 [ui]
