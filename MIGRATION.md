@@ -9,9 +9,9 @@ git clone https://github.com/ronalson/dotfiles ~/Code/dotfiles
 cd ~/Code/dotfiles && ./bootstrap.sh work   # or: personal
 ```
 
-`bootstrap.sh` handles: Homebrew + all apps/CLIs (Brewfile), dotfile symlinks
-(stow, work profile), oh-my-zsh + plugins, Node via fnm, macOS defaults, and
-the Dock layout.
+`bootstrap.sh` handles: Homebrew + all apps/CLIs (`Brewfile.<profile>`), dotfile
+symlinks (stow), oh-my-zsh + plugins, Node (Vite+ on personal, fnm on work),
+macOS defaults, and the Dock layout.
 
 ## Manual steps
 

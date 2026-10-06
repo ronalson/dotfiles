@@ -1,20 +1,52 @@
-# Brewfile.work — work-machine-only additions, applied by `./bootstrap.sh work`
-# after the main Brewfile: brew bundle --file=Brewfile.work
+# Brewfile.work — the work machine's packages, applied with
+# `brew bundle --file=Brewfile.work` (bootstrap.sh runs it on a new machine).
 # (Rosetta 2 is not a cask — bootstrap.sh installs it via softwareupdate.)
 
+# Adopt apps that already exist in /Applications (e.g. installed manually or
+# copied by Migration Assistant) instead of failing. If a version mismatch
+# still fails one, use: brew install --cask --force <name>
 cask_args adopt: true
 
 tap "atlassian/acli", trusted: true
+tap "docker/tap", trusted: true
+tap "nikitabobko/tap"
 
 # --- CLI tools -------------------------------------------------------------
-brew "azure-cli"
 brew "atlassian/acli/acli"
+brew "azure-cli"
+brew "dockutil"
+brew "fnm"
+brew "gh"
+brew "herdr"
 brew "mise"
+brew "stow"
 brew "yamllint"
 
+# --- Fonts -------------------------------------------------------------------
+cask "font-fira-code"
+
 # --- Apps --------------------------------------------------------------------
+cask "nikitabobko/tap/aerospace"
+cask "bruno"
+cask "choosy"
 cask "claude"
+cask "claude-code@latest"
+cask "codexbar"
 cask "cursor"
 cask "dbeaver-community"
+cask "docker-desktop"
+cask "figma"
+cask "firefox"
+cask "google-chrome"
+cask "karabiner-elements"
 cask "postman"
+cask "proxyman"
+cask "raycast"
 cask "rider"
+cask "ghostty"
+cask "docker/tap/sbx"
+cask "shottr"
+cask "zed"
+
+# NOTE: MDM-managed apps (Teams, Office, Defender, Company Portal) are
+# intentionally excluded — company IT pushes those.

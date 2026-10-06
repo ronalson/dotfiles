@@ -105,10 +105,9 @@ fi
 # --- Homebrew ---------------------------------------------------------------
 section "Homebrew"
 export HOMEBREW_NO_AUTO_UPDATE=1
-brewfiles=("$DOTFILES_DIR/Brewfile")
-[[ "$PROFILE" == work ]] && brewfiles+=("$DOTFILES_DIR/Brewfile.work")
+brewfile="$DOTFILES_DIR/Brewfile.$PROFILE"
 
-brewfile_entries() { for f in "${brewfiles[@]}"; do brew bundle list "$1" --file="$f"; done | sort -u; }
+brewfile_entries() { brew bundle list "$1" --file="$brewfile" | sort -u; }
 # brew list prints names without the tap prefix (aerospace, not nikitabobko/tap/aerospace)
 strip_tap() { sed 's|.*/||' | sort -u; }
 
@@ -145,7 +144,7 @@ for cask in $wanted_casks; do
     fi
     brew_problems=$((brew_problems + 1))
 done
-(( brew_problems == 0 )) && pass "Everything in the Brewfile is installed"
+(( brew_problems == 0 )) && pass "Everything in Brewfile.$PROFILE is installed"
 
 # Formulae and casks get separate hints: a bare name can resolve to the wrong
 # kind (codexbar is a cask here, but steipete/tap also has a codexbar formula).
@@ -171,8 +170,8 @@ for name in $(brew leaves --installed-on-request | strip_tap) $installed_casks; 
     grep -qxF "$name" <<< "$wanted_names"$'\n'"$ignored_names" || untracked+=" $name"
 done
 if [[ -n "$untracked" ]]; then
-    warn "Installed but not in a Brewfile:$untracked"
-    hint "add them to Brewfile or Brewfile.work, list them in Brewfile.ignore, or uninstall them"
+    warn "Installed but not in Brewfile.$PROFILE:$untracked"
+    hint "add them to Brewfile.$PROFILE, list them in Brewfile.ignore, or uninstall them"
 fi
 
 # --- Shell ------------------------------------------------------------------
@@ -192,11 +191,21 @@ for plugin in zsh-autosuggestions zsh-syntax-highlighting zsh-completions; do
         hint "git clone --depth=1 https://github.com/zsh-users/$plugin $ZSH_CUSTOM/plugins/$plugin"
     fi
 done
-if node_version="$(fnm default 2>/dev/null)" && [[ -n "$node_version" ]]; then
-    pass "Node $node_version (fnm default)"
+if [[ "$PROFILE" == work ]]; then
+    if node_version="$(fnm default 2>/dev/null)" && [[ -n "$node_version" ]]; then
+        pass "Node $node_version (fnm default)"
+    else
+        fail "fnm has no default Node version"
+        hint "fnm install --lts && fnm default lts-latest"
+    fi
+elif ! command -v vp &>/dev/null; then
+    fail "Vite+ (vp) is not installed or not on PATH"
+    hint "see step 6 in bootstrap.sh"
+elif vp env doctor &>/dev/null; then
+    pass "Node $(node -v 2>/dev/null) (Vite+)"
 else
-    fail "fnm has no default Node version"
-    hint "fnm install --lts && fnm default lts-latest"
+    fail "vp env doctor reports problems"
+    hint "vp env doctor"
 fi
 
 # --- macOS defaults ---------------------------------------------------------

@@ -7,8 +7,8 @@
 #   git clone https://github.com/ronalson/dotfiles ~/Code/dotfiles
 #   cd ~/Code/dotfiles && ./bootstrap.sh <work|personal>
 #
-# work:     Brewfile + Brewfile.work (Rider, DBeaver) + Rosetta 2 + zsh-work
-# personal: Brewfile only + zsh-personal
+# work:     Brewfile.work + Rosetta 2 + zsh-work + Node via fnm
+# personal: Brewfile.personal + zsh-personal + Node via Vite+
 #
 # Manual steps (auth, keys, licenses) are listed in MIGRATION.md.
 # ===========================================================================
@@ -41,13 +41,8 @@ if [[ "$PROFILE" == "work" && "$(uname -m)" == "arm64" ]] && ! /usr/bin/pgrep -q
 fi
 
 # --- 3. Packages & apps --------------------------------------------------------
-info "Installing Brewfile packages..."
-brew bundle --file="$DOTFILES_DIR/Brewfile"
-
-if [[ "$PROFILE" == "work" ]]; then
-    info "Installing work-only packages (Brewfile.work)..."
-    brew bundle --file="$DOTFILES_DIR/Brewfile.work"
-fi
+info "Installing Brewfile.$PROFILE packages..."
+brew bundle --file="$DOTFILES_DIR/Brewfile.$PROFILE"
 
 # --- 4. Dotfiles (package list per profile lives in packages.sh) ------------------
 info "Stowing dotfiles..."
@@ -69,11 +64,21 @@ for plugin in zsh-autosuggestions zsh-syntax-highlighting zsh-completions; do
     fi
 done
 
-# --- 6. Node (fnm) ----------------------------------------------------------------
-info "Installing Node via fnm..."
-eval "$(fnm env)"
-fnm install --lts
-fnm default lts-latest
+# --- 6. Node --------------------------------------------------------------------
+if [[ "$PROFILE" == "work" ]]; then
+    info "Installing Node via fnm..."
+    eval "$(fnm env)"
+    fnm install --lts
+    fnm default lts-latest
+else
+    # Vite+ manages Node, npm, pnpm and Yarn; bun stays on its own installer.
+    # Re-running the installer upgrades in place. It finds the env source line
+    # already in the stowed ~/.zshrc and leaves that file alone, but adds one to
+    # ~/.zshenv for GUI apps. With no pinned default, Node is the latest LTS.
+    info "Installing Node via Vite+..."
+    curl -fsSL https://vite.plus |
+        VP_NODE_MANAGER=yes VP_PM_MANAGER=yes VP_BUN_MANAGER=no bash
+fi
 
 # --- 7. macOS preferences + Dock --------------------------------------------------
 info "Applying macOS defaults..."

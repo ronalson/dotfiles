@@ -26,30 +26,12 @@ source $ZSH/oh-my-zsh.sh
 export EDITOR="zed"
 export VISUAL="zed"
 
-alias n=pnpm
 alias python=python3
 alias pip=pip3
 
-# fnm (Node version manager)
-if [[ -z "${FNM_MULTISHELL_PATH:-}" ]]; then
-  eval "$(fnm env --use-on-cd)"
-fi
-
-# pnpm
-export PNPM_HOME="$HOME/Library/pnpm"
-typeset -U path
-path=("$PNPM_HOME/bin" ${path:#"$PNPM_HOME"})
-export PATH
-
-pnpm-upgrade() {
-  command corepack install -g pnpm@latest &&
-    command pnpm update -g --latest
-}
-# pnpm end
-
 # -----------------------------
 # Node version in RPROMPT (root-only, no cache)
-# Updates on `cd` and after `fnm` commands.
+# Updates on `cd` and before each prompt.
 # -----------------------------
 
 typeset -g NODE_RPROMPT=""
@@ -71,15 +53,6 @@ autoload -Uz add-zsh-hook
 add-zsh-hook chpwd __update_node_rprompt
 add-zsh-hook precmd __update_node_rprompt
 
-# Wrap fnm so prompt updates immediately after version changes
-if command -v fnm >/dev/null 2>&1; then
-  fnm() {
-    command fnm "$@"
-    __update_node_rprompt
-    zle -I 2>/dev/null
-  }
-fi
-
 setopt prompt_subst
 RPROMPT='${NODE_RPROMPT}'
 
@@ -88,11 +61,39 @@ RPROMPT='${NODE_RPROMPT}'
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
+typeset -U path
 path=("$HOME/.local/bin" "$BUN_INSTALL/bin" $path)
 export PATH
 
 # Vite+ bin (https://viteplus.dev)
-. "$HOME/.vite-plus/env"
+# Manages Node, npm, pnpm and Yarn per project. Sourced after the PATH edits
+# above so its shims come first. Vite+ 1.0 installs into ~/.vite-plus; newer
+# installers default to ~/.config/vite-plus on a fresh machine. The installer
+# only appends its own source line when this file mentions neither path.
+for __vp_env in "$HOME/.vite-plus/env" "$HOME/.config/vite-plus/env"; do
+  [[ -f "$__vp_env" ]] && { . "$__vp_env"; break; }
+done
+unset __vp_env
+
+# Global packages belong to Vite+ (vp install -g / remove -g / update -g /
+# list -g), which keeps them across Node versions. `npm -g` and `pnpm -g`
+# would install into one Node version's directory instead, so refuse them.
+# Only catches commands typed here; scripts calling npm directly bypass it.
+__refuse_global_flag() {
+  local tool=$1 arg
+  shift
+  for arg in "$@"; do
+    case "$arg" in
+      --) break ;;
+      -g|--global|--location=global)
+        print -u2 "$tool: global installs go through Vite+, e.g. vp install -g <pkg>"
+        return 1
+        ;;
+    esac
+  done
+}
+npm() { __refuse_global_flag npm "$@" && command npm "$@"; }
+pnpm() { __refuse_global_flag pnpm "$@" && command pnpm "$@"; }
 
 # >>> grok installer >>>
 export PATH="$HOME/.grok/bin:$PATH"

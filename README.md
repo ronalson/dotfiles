@@ -19,9 +19,8 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 
 Beyond stow packages, the repo also carries:
 
-- `Brewfile` — every CLI tool, app, font (`brew bundle`)
-- `Brewfile.work` — work-only extras (Rider, DBeaver); applied only by
-  `./bootstrap.sh work`
+- `Brewfile.personal`, `Brewfile.work` — every CLI tool, app and font for
+  each machine (`brew bundle`); each file is complete on its own
 - `Brewfile.ignore` — Homebrew packages deliberately left unmanaged, so
   `verify.sh` doesn't report them as untracked
 - `macos/` — system preferences (`defaults.sh`) and Dock layout (`dock.sh`)
@@ -39,9 +38,10 @@ cd ~/Code/dotfiles
 ./bootstrap.sh work       # or: ./bootstrap.sh personal
 ```
 
-Both profiles run: Homebrew → Brewfile → stow → oh-my-zsh → Node (fnm) → macOS
-defaults + Dock. The `work` profile additionally installs Rosetta 2 and
-`Brewfile.work`, and stows `zsh-work` instead of `zsh-personal`.
+Both profiles run: Homebrew → the profile's Brewfile → stow → oh-my-zsh → Node
+→ macOS defaults + Dock. `personal` gets Node, npm and pnpm from
+[Vite+](https://viteplus.dev); `work` gets Node from fnm, installs Rosetta 2,
+and stows `zsh-work` instead of `zsh-personal`.
 
 Then follow [MIGRATION.md](MIGRATION.md) for the manual steps.
 
@@ -58,11 +58,12 @@ changing anything:
 - commits on the remote that haven't been pulled, and uncommitted changes
 - files from the profile's packages (`packages.sh`) that aren't symlinked, or
   that a real file is blocking
-- Brewfile entries that aren't installed, or whose app exists in
-  `/Applications` but isn't managed by Homebrew
-- Homebrew packages installed here but missing from the Brewfiles, and
+- entries in the profile's Brewfile that aren't installed, or whose app
+  exists in `/Applications` but isn't managed by Homebrew
+- Homebrew packages installed here but missing from that Brewfile, and
   available updates (warnings only)
-- oh-my-zsh and its plugins, the fnm default Node version
+- oh-my-zsh and its plugins, and Node: `vp env doctor` on personal, the fnm
+  default version on work
 - macOS preferences that differ from `macos/defaults.list`
 - the machine-specific files and auth from MIGRATION.md
 
@@ -242,3 +243,8 @@ Only one `zsh-*` package should be stowed at a time since they both target `~/.z
 ./install.sh --delete zsh-personal
 ./install.sh zsh-work
 ```
+
+On the personal profile, global npm packages go through Vite+ (`vp install -g`,
+`vp remove -g`, `vp update -g`, `vp list -g`), which keeps them across Node
+versions. `zsh-personal` refuses `npm -g` and `pnpm -g` typed in the shell,
+since those would install into a single Node version's directory.
