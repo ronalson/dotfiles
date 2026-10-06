@@ -13,7 +13,9 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | `ghostty` | [Ghostty](https://ghostty.org/) terminal emulator | `~/.config/ghostty/` |
 | `herdr` | [Herdr](https://herdr.dev/) terminal workspace manager for coding agents | `~/.config/herdr/` |
 | `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) key remapping via [GokuRakuJo](https://github.com/yqrashawn/GokuRakuJo) | `~/.config/karabiner/` |
-| `zed` | [Zed](https://zed.dev/) code editor | `~/.config/zed/` |
+| `zed` | [Zed](https://zed.dev/) keymap, shared by both machines | `~/.config/zed/keymap.json` |
+| `zed-personal` | Zed settings (personal machine) | `~/.config/zed/settings.json` |
+| `zed-work` | Zed settings (work machine) | `~/.config/zed/settings.json` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
 | `zsh-work` | ZSH config (work machine) | `~/.zshrc` |
 
@@ -89,7 +91,7 @@ cd ~/Code/dotfiles
 `install.sh` only stows the packages you name. Run with no arguments, it
 changes nothing and prints the package list for this machine's profile (from
 `packages.sh`) plus every package in the repo. Stowing everything would link
-both zsh profiles, which conflict, and packages a machine doesn't use.
+both zsh and Zed profiles, which conflict, and packages a machine doesn't use.
 
 ### Stow a specific package
 
@@ -132,7 +134,9 @@ dotfiles/
 ├── herdr/
 │   └── .config/herdr/config.toml            → ~/.config/herdr/config.toml
 ├── zed/
-│   └── .config/zed/{settings,keymap}.json   → ~/.config/zed/
+│   └── .config/zed/keymap.json              → ~/.config/zed/keymap.json
+├── zed-personal/
+│   └── .config/zed/settings.json            → ~/.config/zed/settings.json
 └── zsh-personal/
     └── .zshrc                               → ~/.zshrc
 ```
@@ -234,15 +238,22 @@ Without `context_window_size`, only the uncolored bar and percentage are shown.
 
 Line 2 is a single black `·` that separates the status line from Claude Code's mode indicator. Claude Code trims blank lines, so the line needs visible content.
 
-## ZSH profiles
+## Machine profiles
 
-Only one `zsh-*` package should be stowed at a time since they both target `~/.zshrc`:
+`zsh-personal`/`zsh-work` and `zed-personal`/`zed-work` are pairs: each pair
+targets the same file (`~/.zshrc`, `~/.config/zed/settings.json`), so only one
+of each should be stowed at a time:
 
 ```bash
 # Switch from personal to work
-./install.sh --delete zsh-personal
-./install.sh zsh-work
+./install.sh --delete zsh-personal zed-personal
+./install.sh zsh-work zed-work
 ```
+
+Zed writes settings changed in its UI straight into the linked file. Each
+machine having its own settings file means those edits never collide with the
+other machine's, even when they sit uncommitted for a while. A setting you want
+on both machines has to be copied into both files.
 
 On the personal profile, global npm packages go through Vite+ (`vp install -g`,
 `vp remove -g`, `vp update -g`, `vp list -g`), which keeps them across Node

@@ -9,7 +9,7 @@
 #   ./install.sh --dry aerospace        # Simulate (no changes)
 #   ./install.sh --delete aerospace     # Unstow package(s)
 #
-# Packages must be named: stowing everything would link both zsh profiles
+# Packages must be named: stowing everything would link both zsh and Zed profiles
 # and packages a machine doesn't use. Run with no arguments to see this
 # machine's list from packages.sh.
 # ===========================================================================
@@ -84,7 +84,7 @@ done
 if [[ $# -eq 0 ]]; then
     echo "No packages given, so nothing was changed."
     echo "Name the packages to stow or unstow. Stowing every package would link both"
-    echo "zsh profiles, which conflict, and packages this machine doesn't use."
+    echo "zsh and Zed profiles, which conflict, and packages this machine doesn't use."
     echo ""
     usage
     exit 1

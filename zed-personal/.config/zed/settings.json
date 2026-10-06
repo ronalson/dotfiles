@@ -1,0 +1,212 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "ssh_connections": [
+    {
+      "host": "ronbox",
+      "args": [],
+      "projects": [
+        {
+          "paths": [
+            "/home/ronalson"
+          ]
+        }
+      ]
+    }
+  ],
+  "markdown_preview": {
+    "font_size": 14.0
+  },
+  "agent_buffer_font_size": 14.0,
+  "agent_ui_font_size": 14.0,
+  "lsp": {
+    "vtsls": {
+      "settings": {
+        "typescript": {
+          "updateImportsOnFileMove": {
+            "enabled": "always",
+          },
+        },
+        "javascript": {
+          "updateImportsOnFileMove": {
+            "enabled": "always",
+          },
+        },
+      },
+      "enable_lsp_tasks": true,
+    },
+  },
+  "agent_servers": {
+    "grok-build": {
+      "type": "registry"
+    },
+    "codex-acp": {
+      "default_config_options": {
+        "model": "gpt-5.6-sol",
+        "mode": "agent"
+      },
+      "type": "registry"
+    },
+  },
+  "disable_ai": false,
+  "edit_predictions": {
+    "provider": "zed",
+  },
+  "cli_default_open_behavior": "new_window",
+  "git": {
+    "blame": {
+      "show_avatar": false,
+    },
+  },
+  "tabs": {
+    "file_icons": false,
+    "git_status": false,
+  },
+  "debugger": {
+    "button": true,
+  },
+  "status_bar": {
+    "cursor_position_button": true,
+  },
+  "project_panel": {
+    "dock": "left",
+    "button": true,
+  },
+  "title_bar": {
+    "show_branch_status_icon": true,
+    "show_menus": false,
+    "show_project_items": true,
+  },
+  "terminal": {
+    "button": false,
+  },
+  "outline_panel": {
+    "indent_size": 12.0,
+    "default_width": 380.0,
+    "dock": "right",
+  },
+  "collaboration_panel": {
+    "dock": "left",
+    "button": false,
+  },
+  "git_panel": {
+    "default_width": 380.0,
+    "dock": "right",
+    "tree_view": false,
+  },
+  "vim_mode": false,
+  "languages": {
+    "Markdown": {
+      "show_edit_predictions": false,
+    },
+    "JavaScript": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true,
+      },
+      "formatter": {
+        "external": {
+          "command": "prettier",
+          "arguments": ["--stdin-filepath", "{buffer_path"],
+        },
+      },
+    },
+  },
+  "agent": {
+    "favorite_models": [
+      {
+        "provider": "openrouter",
+        "model": "google/gemini-3.7-flash",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "deepseek/deepseek-v4-pro-0813",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "moonshotai/kimi-k3",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "x-ai/grok-4.6",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openai-subscribed",
+        "model": "gpt-5.6-sol",
+        "enable_thinking": true,
+        "effort": "high"
+      },
+      {
+        "provider": "openai-subscribed",
+        "model": "gpt-5.6-terra",
+        "enable_thinking": true,
+        "effort": "low"
+      },
+      {
+        "provider": "openai-subscribed",
+        "model": "gpt-5.6-luna",
+        "enable_thinking": true,
+        "effort": "medium"
+      },
+      {
+        "provider": "zed.dev",
+        "model": "claude-sonnet-5",
+        "enable_thinking": true,
+        "effort": "high"
+      },
+      {
+        "provider": "zed.dev",
+        "model": "claude-haiku-4-5",
+        "enable_thinking": true
+      },
+      {
+        "provider": "openrouter",
+        "model": "~deepseek/deepseek-v4-flash-latest",
+        "enable_thinking": true
+      }
+    ],
+    "default_model": {
+      "provider": "openai-subscribed",
+      "model": "gpt-5.6-sol",
+      "enable_thinking": true,
+      "effort": "high"
+    },
+    "sidebar_side": "right",
+    "dock": "right",
+    "button": true,
+    "model_parameters": [],
+  },
+  "telemetry": {
+    "diagnostics": true,
+    "metrics": true,
+  },
+  "base_keymap": "Cursor",
+  "search": {
+    "include_ignored": false,
+  },
+  "minimap": {
+    "show": "never",
+  },
+  "autosave": "off",
+  "file_types": {},
+  "auto_indent_on_paste": true,
+  "linked_edits": true,
+  "show_edit_predictions": false,
+  "tab_size": 2,
+  "ui_font_size": 14.0,
+  "buffer_font_size": 13.0,
+  "theme": {
+    "mode": "system",
+    "light": "Ayu Light",
+    "dark": "Ayu Dark",
+  },
+}

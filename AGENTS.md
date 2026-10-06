@@ -20,6 +20,7 @@ macOS dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/), orga
 - **Brewfiles** are per profile (`Brewfile.personal`, `Brewfile.work`) and each is complete on its own; add a Homebrew package to every profile's Brewfile that should get it.
 - **macOS defaults** live in `macos/defaults.list`, which both `macos/defaults.sh` and `verify.sh` read.
 - **ZSH profiles** are mutually exclusive packages (`zsh-personal`, `zsh-work`). Only one should be stowed at a time — they both target `~/.zshrc`.
+- **Zed settings** follow the same pattern: `zed-personal` and `zed-work` each hold a complete `~/.config/zed/settings.json`, while `zed` holds the shared `keymap.json`. Zed rewrites `settings.json` from its UI, so a setting meant for both machines must be added to both files.
 - **Commit messages** do not include AI co-author attribution.
 - **Karabiner** only detects config changes when the whole `~/.config/karabiner` directory is a symlink; a symlinked `karabiner.json` gets replaced by a regular file on the next UI save. So `~/.config/karabiner` links to `karabiner/.config/karabiner/`, and Karabiner's `automatic_backups/` and `assets/` land in the repo (gitignored). It rewrites `karabiner.json` on every settings change — check `git diff` after modifying Karabiner settings.
 - **App bundle IDs** for AeroSpace `on-window-detected` rules can be found with `mdls -name kMDItemCFBundleIdentifier -r /Applications/<App>.app`.

@@ -6,8 +6,8 @@
 
 profile_packages() {
     case "$1" in
-        work)     echo aerospace agents claude ghostty git herdr karabiner zed zsh-work ;;
-        personal) echo aerospace agents claude ghostty git herdr karabiner zed zsh-personal ;;
+        work)     echo aerospace agents claude ghostty git herdr karabiner zed zed-work zsh-work ;;
+        personal) echo aerospace agents claude ghostty git herdr karabiner zed zed-personal zsh-personal ;;
     esac
 }
 
