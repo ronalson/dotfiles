@@ -56,6 +56,11 @@ Before mutating for actionable work, say in one or two sentences what done looks
 - Worker packets include six brief fields: **Goal**, **Use** (non-inheritable context), **Own**, **Do not**, **Return**, **Stop if**.
 - Isolate concurrent writers to disjoint files; reconcile returns on the main thread before the next step.
 
+## Skills in Claude Code
+
+- Run `scout` as a subagent, not inline: use the built-in `Explore` agent with `model: haiku` and `effort: medium`, and pass the `scout` skill's instructions plus the packet as the prompt. Keep packets under 100K tokens.
+- Each repository's verification skill lives in `.claude/skills/verify-<app>/`. It is the single source of truth for proving behavior; create it with `/create-verification-skill` and keep it current with `/maintain-verification-skill`.
+
 ## Commits and Pull Requests
 
 - Do not commit unless requested.
