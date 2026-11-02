@@ -53,3 +53,10 @@ pnpm() { __refuse_global_flag pnpm "$@" && command pnpm "$@"; }
 # >>> grok installer >>>
 export PATH="$HOME/.grok/bin:$PATH"
 # <<< grok installer <<<
+
+# Grok's installer also ships ~/.grok/bin/agent and prepends that directory,
+# which hides Cursor's agent. ~/.local/bin is already on PATH from common.zsh;
+# putting it first again makes `agent` the Cursor CLI. `grok` still resolves
+# through the symlink in ~/.local/bin.
+path=("$HOME/.local/bin" $path)
+export PATH
