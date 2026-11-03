@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Start a read-only role (scout or reviewer) in Grok or Pi with the role's
-# tool-neutral rules from ~/.config/agent-roles/<role>.md.
+# Start a read-only role (scout or reviewer). The Claude scout uses its agent
+# file (~/.claude/agents/scout.md); Grok and Pi get the role's tool-neutral
+# rules from ~/.config/agent-roles/<role>.md.
 #
 # Usage:
-#   agent-role scout|reviewer [--via grok|pi] [--model <id>] [--session-dir <dir>] [-p <prompt>]
+#   agent-role scout|reviewer [--via claude|grok|pi] [--model <id>] [--session-dir <dir>] [-p <prompt>]
 #
-#   --via          grok (default for reviewer) or pi (default for scout)
+#   --via          claude (default for scout, scout only), grok (default for reviewer) or pi
 #   --model        override the role's default model for that tool
 #   --session-dir  Pi only: where Pi writes the session .jsonl
 #   -p             run one turn and exit instead of starting the TUI
@@ -16,13 +17,13 @@
 
 set -euo pipefail
 
-usage() { sed -n '5,11s/^# \{0,1\}//p' "$0" >&2; exit 2; }
+usage() { sed -n '6,12s/^# \{0,1\}//p' "$0" >&2; exit 2; }
 die() { echo "agent-role: $*" >&2; exit 1; }
 
 [[ $# -ge 1 ]] || usage
 role="$1"; shift
 case "$role" in
-    scout) via=pi ;;
+    scout) via=claude ;;
     reviewer) via=grok ;;
     -h|--help) usage ;;
     *) die "unknown role '$role' (expected scout or reviewer)" ;;
@@ -31,7 +32,7 @@ esac
 model="" session_dir="" prompt="" one_shot=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --via) via="${2:?--via needs grok or pi}"; shift 2 ;;
+        --via) via="${2:?--via needs claude, grok or pi}"; shift 2 ;;
         --model) model="${2:?--model needs an id}"; shift 2 ;;
         --session-dir) session_dir="${2:?--session-dir needs a path}"; shift 2 ;;
         -p) prompt="${2:?-p needs a prompt}"; one_shot=true; shift 2 ;;
@@ -41,10 +42,20 @@ while [[ $# -gt 0 ]]; do
 done
 
 rules="${AGENT_ROLES_DIR:-$HOME/.config/agent-roles}/$role.md"
-[[ -f "$rules" ]] || die "rules file not found: $rules"
+need_rules() { [[ -f "$rules" ]] || die "rules file not found: $rules"; }
 
 case "$via" in
+    claude)
+        # Claude is the main thread's model family, so it only runs the scout.
+        [[ "$role" == scout ]] || die "--via claude is scout only; use a reviewer from another model family"
+        [[ -z "$session_dir" ]] || die "--session-dir is Pi only"
+        # effort in the agent file isn't applied under --agent, and MCP tools
+        # leak in without --strict-mcp-config. The agent file sets Haiku.
+        cmd=(claude --agent scout --effort medium --strict-mcp-config)
+        [[ -z "$model" ]] || cmd+=(--model "$model")
+        ;;
     grok)
+        need_rules
         [[ -z "$session_dir" ]] || die "--session-dir is Pi only; read Grok back with grok export"
         case "$role" in
             reviewer) model="${model:-grok-4.7}" effort=high ;;
@@ -62,6 +73,7 @@ case "$via" in
             --rules "$(cat "$rules")")
         ;;
     pi)
+        need_rules
         case "$role" in
             reviewer) model="${model:-openrouter/z-ai/glm-5.3}" ;;
             scout) model="${model:-openrouter/z-ai/glm-5.3-flash}" ;;
@@ -73,11 +85,11 @@ case "$via" in
             --model "$model" --name "$role" --append-system-prompt "$rules")
         [[ -z "$session_dir" ]] || cmd+=(--session-dir "$session_dir")
         ;;
-    *) die "unknown --via '$via' (expected grok or pi)" ;;
+    *) die "unknown --via '$via' (expected claude, grok or pi)" ;;
 esac
 
 if $one_shot; then
-    # Pi -p waits on an open stdin, so one-shot runs close it.
+    # pi -p waits on an open stdin, so one-shot runs close it.
     exec "${cmd[@]}" -p "$prompt" < /dev/null
 fi
 exec "${cmd[@]}"
