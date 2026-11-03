@@ -50,8 +50,8 @@ Before mutating for actionable work, say in one or two sentences what done looks
 ## Delegation
 
 - Handle routine work yourself. Delegate only when work can proceed independently and one agent can't finish it in one pass. Do not use subagents to verify or double-check your own work.
-- Run roles with the `delegate` skill. Each role is its own agent in a herdr pane:
-  - `scout`: read-only reconnaissance, `agent-role scout` (Claude Haiku by default; `--via grok|pi` for another model).
+- Run scouts and workers with the `delegate` skill and reviews with the `review` skill. Each role is its own agent in a herdr pane:
+  - `scout`: read-only reconnaissance, `claude --agent scout` (Haiku); `agent-role scout --via grok|pi` for another model.
   - `worker`: implementation, `claude --agent worker` in its own worktree.
   - `reviewer`: read-only review from another model family, `agent-role reviewer` (Grok by default; `--via pi` for GLM).
 - Models and read-only flags live in the agent files (`~/.claude/agents/`) and `agent-role`; role rules for Grok and Pi live in `~/.config/agent-roles/`. Outside herdr, say so instead of starting role agents.
