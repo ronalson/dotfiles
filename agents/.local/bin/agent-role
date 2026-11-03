@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Start a read-only role (scout or reviewer) in Grok or Pi with the role's
+# tool-neutral rules from ~/.config/agent-roles/<role>.md.
+#
+# Usage:
+#   agent-role scout|reviewer [--via grok|pi] [--model <id>] [--session-dir <dir>] [-p <prompt>]
+#
+#   --via          grok (default for reviewer) or pi (default for scout)
+#   --model        override the role's default model for that tool
+#   --session-dir  Pi only: where Pi writes the session .jsonl
+#   -p             run one turn and exit instead of starting the TUI
+#
+# Each tool gets only read tools, with MCP and subagents off. Grok's session ID
+# is printed to stderr so the run can be read back with `grok export <id> <file>`.
+# Set AGENT_ROLES_DIR to read rules from somewhere else (e.g. a dotfiles worktree).
+
+set -euo pipefail
+
+usage() { sed -n '5,11s/^# \{0,1\}//p' "$0" >&2; exit 2; }
+die() { echo "agent-role: $*" >&2; exit 1; }
+
+[[ $# -ge 1 ]] || usage
+role="$1"; shift
+case "$role" in
+    scout) via=pi ;;
+    reviewer) via=grok ;;
+    -h|--help) usage ;;
+    *) die "unknown role '$role' (expected scout or reviewer)" ;;
+esac
+
+model="" session_dir="" prompt="" one_shot=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --via) via="${2:?--via needs grok or pi}"; shift 2 ;;
+        --model) model="${2:?--model needs an id}"; shift 2 ;;
+        --session-dir) session_dir="${2:?--session-dir needs a path}"; shift 2 ;;
+        -p) prompt="${2:?-p needs a prompt}"; one_shot=true; shift 2 ;;
+        -h|--help) usage ;;
+        *) die "unknown argument '$1'" ;;
+    esac
+done
+
+rules="${AGENT_ROLES_DIR:-$HOME/.config/agent-roles}/$role.md"
+[[ -f "$rules" ]] || die "rules file not found: $rules"
+
+case "$via" in
+    grok)
+        [[ -z "$session_dir" ]] || die "--session-dir is Pi only; read Grok back with grok export"
+        case "$role" in
+            reviewer) model="${model:-grok-4.7}" effort=high ;;
+            scout) model="${model:-grok-4.7}" effort=medium ;;
+        esac
+        session_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+        echo "agent-role: grok session $session_id" >&2
+        # search_tool/use_tool would let Grok discover and call MCP tools
+        # (including GitHub writes), so they go even though --tools is set.
+        # Rules are passed as contents: given a path, Grok spends a tool call
+        # reading it.
+        cmd=(grok --model "$model" --reasoning-effort "$effort" --permission-mode plan
+            --tools read_file,list_dir,grep --disallowed-tools search_tool,use_tool
+            --no-subagents --disable-web-search --session-id "$session_id"
+            --rules "$(cat "$rules")")
+        ;;
+    pi)
+        case "$role" in
+            reviewer) model="${model:-openrouter/z-ai/glm-5.3}" ;;
+            scout) model="${model:-openrouter/z-ai/glm-5.3-flash}" ;;
+        esac
+        gate="$HOME/.pi/agent/git/github.com/ronalson/pi-permission-gate/index.ts"
+        [[ -f "$gate" ]] || die "permission gate not found: $gate"
+        # --tools alone keeps MCP tools, so --no-mcp is needed as well.
+        cmd=(pi --no-extensions -e "$gate" --no-mcp --tools read,grep,find,ls
+            --model "$model" --name "$role" --append-system-prompt "$rules")
+        [[ -z "$session_dir" ]] || cmd+=(--session-dir "$session_dir")
+        ;;
+    *) die "unknown --via '$via' (expected grok or pi)" ;;
+esac
+
+if $one_shot; then
+    # Pi -p waits on an open stdin, so one-shot runs close it.
+    exec "${cmd[@]}" -p "$prompt" < /dev/null
+fi
+exec "${cmd[@]}"
