@@ -45,5 +45,14 @@ macOS defaults, and the Dock layout.
 - [ ] AeroSpace — accessibility
 - [ ] Raycast, Shottr — screen recording / accessibility
 
+### Agent setup
+- [ ] Install the global agent rules, role files and `agent-role` from
+  [ronalson/vaibes](https://github.com/ronalson/vaibes), then its skills:
+  ```bash
+  git clone https://github.com/ronalson/vaibes ~/Code/personal/vaibes
+  cd ~/Code/personal/vaibes && python3 install.py claude codex pi
+  npx skills add ronalson/vaibes
+  ```
+
 ### Optional
 - [ ] Re-run `./macos/dock.sh` after MDM installs Teams/Edge so they get pinned

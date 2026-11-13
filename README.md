@@ -6,7 +6,6 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 
 | Package | Description | Target |
 |---------|-------------|--------|
-| `agents` | Global agent instructions for Codex, Pi and Claude (Pi's leaves out the delegation rules); Claude Code agent files (`scout`, `worker`); read-only role rules and the `agent-role` launcher (Claude, Grok or Pi) | `~/.codex/AGENTS.md`, `~/.pi/agent/AGENTS.md`, `~/.claude/CLAUDE.md`, `~/.claude/agents/`, `~/.config/agent-roles/`, `~/.local/bin/agent-role` |
 | `claude` | [Claude Code](https://claude.com/claude-code) status line script | `~/.claude/statusline.sh` |
 | `aerospace` | [AeroSpace](https://github.com/nikitabobko/AeroSpace) tiling window manager | `~/.config/aerospace/` |
 | `git` | Git config, global ignore | `~/.gitconfig`, `~/.gitignore_global`, `~/.config/git/` |
@@ -20,6 +19,13 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 | `zsh` | Shared ZSH setup (oh-my-zsh, editor, prompt), sourced by both profiles' `.zshrc` | `~/.config/zsh/common.zsh` |
 | `zsh-personal` | ZSH config (personal machine) | `~/.zshrc` |
 | `zsh-work` | ZSH config (work machine) | `~/.zshrc` |
+
+### Agent setup
+
+Global agent rules, the Claude `scout` and `worker` agent files, role rules,
+and `agent-role` come from [ronalson/vaibes](https://github.com/ronalson/vaibes).
+From a vaibes clone, install them with `python3 install.py claude codex pi`.
+Skills install with `npx skills add ronalson/vaibes`.
 
 Beyond stow packages, the repo also carries:
 
@@ -99,7 +105,7 @@ both zsh and Zed profiles, which conflict, and packages a machine doesn't use.
 ### Stow a specific package
 
 ```bash
-./install.sh agents
+./install.sh git
 ./install.sh aerospace
 ./install.sh zsh-personal   # or zsh-work
 ```
