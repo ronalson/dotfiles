@@ -50,7 +50,9 @@ macOS defaults, and the Dock layout.
   [ronalson/vaibes](https://github.com/ronalson/vaibes), then its skills:
   ```bash
   git clone https://github.com/ronalson/vaibes ~/Code/personal/vaibes
-  cd ~/Code/personal/vaibes && python3 install.py claude codex pi
+  cd ~/Code/personal/vaibes
+  python3 install.py claude grok pi   # personal
+  python3 install.py claude           # work
   npx skills add ronalson/vaibes
   ```
 

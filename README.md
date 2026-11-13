@@ -24,7 +24,8 @@ Personal macOS configuration managed with [GNU Stow](https://www.gnu.org/softwar
 
 Global agent rules, the Claude `scout` and `worker` agent files, role rules,
 and `agent-role` come from [ronalson/vaibes](https://github.com/ronalson/vaibes).
-From a vaibes clone, install them with `python3 install.py claude codex pi`.
+From a vaibes clone, install them with `python3 install.py claude grok pi` on
+the personal machine, or `python3 install.py claude` on the work machine.
 Skills install with `npx skills add ronalson/vaibes`.
 
 Beyond stow packages, the repo also carries:
